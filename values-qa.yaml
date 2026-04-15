@@ -115,6 +115,18 @@ odkCentral:
   enabled: true
   replicaCount: 1
 
+  ## -- Images
+  image:
+    repository: ghcr.io/getodk/central-backend
+    tag: v2025.2.1
+    pullPolicy: IfNotPresent
+
+  frontend:
+    image:
+      repository: ghcr.io/getodk/central-nginx
+      tag: v2025.2.1
+      pullPolicy: IfNotPresent
+
   ## -- Ingress
   ingress:
     enabled: true

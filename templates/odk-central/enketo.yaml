@@ -26,8 +26,8 @@ spec:
       {{- end }}
       containers:
         - name: enketo
-          image: "{{ .Values.odkCentral.enketo.image.repository }}:{{ .Values.odkCentral.enketo.image.tag }}"
-          imagePullPolicy: {{ .Values.odkCentral.enketo.image.pullPolicy }}
+          image: "{{ (.Values.odkCentral.enketo.image).repository | default "ghcr.io/getodk/central-enketo" }}:{{ (.Values.odkCentral.enketo.image).tag | default "v2025.2.1" }}"
+          imagePullPolicy: {{ (.Values.odkCentral.enketo.image).pullPolicy | default "IfNotPresent" }}
           ports:
             - name: http
               containerPort: 8005

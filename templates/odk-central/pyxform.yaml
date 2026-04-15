@@ -26,8 +26,8 @@ spec:
       {{- end }}
       containers:
         - name: pyxform
-          image: "{{ .Values.odkCentral.pyxform.image.repository }}:{{ .Values.odkCentral.pyxform.image.tag }}"
-          imagePullPolicy: {{ .Values.odkCentral.pyxform.image.pullPolicy }}
+          image: "{{ (.Values.odkCentral.pyxform.image).repository | default "ghcr.io/getodk/central-pyxform" }}:{{ (.Values.odkCentral.pyxform.image).tag | default "v2025.2.1" }}"
+          imagePullPolicy: {{ (.Values.odkCentral.pyxform.image).pullPolicy | default "IfNotPresent" }}
           ports:
             - name: http
               containerPort: 80

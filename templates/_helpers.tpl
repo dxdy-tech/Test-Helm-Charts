@@ -45,7 +45,7 @@ Social Registry common labels
 {{- define "social-registry.labels" -}}
 helm.sh/chart: {{ include "farmer-registry.chart" . }}
 {{ include "social-registry.selectorLabels" . }}
-app.kubernetes.io/version: {{ .Values.socialRegistry.image.tag | default .Chart.AppVersion | quote }}
+app.kubernetes.io/version: {{ (.Values.socialRegistry.image).tag | default .Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 app.kubernetes.io/part-of: {{ include "farmer-registry.name" . }}
 {{- end }}
@@ -115,7 +115,7 @@ ODK Central common labels
 {{- define "odk-central.labels" -}}
 helm.sh/chart: {{ include "farmer-registry.chart" . }}
 {{ include "odk-central.selectorLabels" . }}
-app.kubernetes.io/version: {{ .Values.odkCentral.image.tag | default .Chart.AppVersion | quote }}
+app.kubernetes.io/version: {{ (.Values.odkCentral.image).tag | default .Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 app.kubernetes.io/part-of: {{ include "farmer-registry.name" . }}
 {{- end }}
@@ -144,7 +144,7 @@ ODK Central frontend labels
 {{- define "odk-central.frontendLabels" -}}
 helm.sh/chart: {{ include "farmer-registry.chart" . }}
 {{ include "odk-central.frontendSelectorLabels" . }}
-app.kubernetes.io/version: {{ .Values.odkCentral.frontend.image.tag | default .Chart.AppVersion | quote }}
+app.kubernetes.io/version: {{ (.Values.odkCentral.frontend.image).tag | default .Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 app.kubernetes.io/part-of: {{ include "farmer-registry.name" . }}
 {{- end }}
