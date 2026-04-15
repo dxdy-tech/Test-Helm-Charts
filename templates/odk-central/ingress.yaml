@@ -1,0 +1,35 @@
+{{- if and .Values.odkCentral.enabled .Values.odkCentral.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "odk-central.fullname" . }}
+  labels:
+    {{- include "odk-central.labels" . | nindent 4 }}
+  {{- with .Values.odkCentral.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.odkCentral.ingress.className }}
+  ingressClassName: {{ .Values.odkCentral.ingress.className }}
+  {{- end }}
+  {{- if .Values.odkCentral.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.odkCentral.ingress.hostname | quote }}
+      {{- if .Values.odkCentral.ingress.tls.secretName }}
+      secretName: {{ .Values.odkCentral.ingress.tls.secretName }}
+      {{- end }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.odkCentral.ingress.hostname | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "odk-central.frontendFullname" . }}
+                port:
+                  number: 80
+{{- end }}

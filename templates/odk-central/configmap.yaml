@@ -1,0 +1,102 @@
+{{- if .Values.odkCentral.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "odk-central.fullname" . }}-config
+  labels:
+    {{- include "odk-central.labels" . | nindent 4 }}
+data:
+  config.json.template: |
+    {
+      "default": {
+        "database": {
+          "host": "${DB_HOST}",
+          "user": "${DB_USER}",
+          "password": "${DB_PASSWORD}",
+          "database": "${DB_NAME}",
+          "ssl": ${DB_SSL}
+        },
+        "email": {
+          "serviceAccount": "${EMAIL_FROM}",
+          "transport": "smtp",
+          "transportOpts": {
+            "host": "${EMAIL_HOST}",
+            "port": ${EMAIL_PORT},
+            "secure": ${EMAIL_SECURE},
+            "ignoreTLS": ${EMAIL_IGNORE_TLS}
+          }
+        },
+        "xlsform": {
+          "host": "${PYXFORM_HOST}",
+          "port": ${PYXFORM_PORT}
+        },
+        "enketo": {
+          "url": "http://${ENKETO_HOST}:${ENKETO_PORT}/-",
+          "apiKey": "${ENKETO_API_KEY}"
+        },
+        "env": {
+          "domain": "https://${DOMAIN}",
+          "sysadminAccount": "${SYSADMIN_EMAIL}"
+        }
+      }
+    }
+  start-odk.sh: |
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "generating local service configuration..."
+    envsubst < /usr/share/odk/config.json.template > /usr/odk/config/local.json
+    echo "running migrations..."
+    node ./lib/bin/run-migrations
+    echo "starting cron..."
+    cron -f &
+    echo "starting server..."
+    exec npx --no pm2-runtime ./pm2.config.js
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "odk-central.frontendFullname" . }}-config
+  labels:
+    {{- include "odk-central.frontendLabels" . | nindent 4 }}
+data:
+  odk.conf.template: |
+    server {
+      listen 80;
+      server_tokens off;
+      client_max_body_size 100m;
+
+      gzip on;
+      gzip_vary on;
+      gzip_min_length 1280;
+      gzip_http_version 1.1;
+      gzip_types text/plain text/css application/json application/javascript text/xml text/csv;
+
+      location ~ ^/-(/|$) {
+        proxy_pass http://${ENKETO_HOST}:${ENKETO_PORT};
+        proxy_redirect off;
+        proxy_set_header Host $host;
+      }
+
+      location ~ ^/v\d {
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_pass http://${BACKEND_URL};
+        proxy_redirect off;
+        proxy_request_buffering on;
+        proxy_buffering off;
+        proxy_read_timeout 2m;
+      }
+
+      location / {
+        root /usr/share/nginx/html;
+        try_files $uri $uri/ /index.html;
+      }
+    }
+  setup-odk.sh: |
+    #!/usr/bin/env bash
+    set -euo pipefail
+    export DOLLAR='$'
+    echo "writing fresh nginx config..."
+    envsubst < /usr/share/odk/nginx/odk.conf.template > /etc/nginx/conf.d/odk.conf
+    rm -f /etc/nginx/conf.d/redirector.conf
+    exec nginx -g "daemon off;"
+{{- end }}

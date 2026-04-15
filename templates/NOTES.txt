@@ -1,0 +1,54 @@
+
+==================================================================
+  DAD Farmer Registry — deployed via {{ .Chart.Name }} {{ .Chart.Version }}
+==================================================================
+
+{{- if .Values.socialRegistry.enabled }}
+
+Social Registry (Odoo / OpenG2P):
+  {{- if .Values.socialRegistry.ingress.enabled }}
+  URL: {{ if .Values.socialRegistry.ingress.tls.enabled }}https{{ else }}http{{ end }}://{{ .Values.socialRegistry.ingress.hostname }}
+  {{- else }}
+  Service: {{ include "social-registry.fullname" . }}:{{ .Values.socialRegistry.service.port }}
+  {{- end }}
+
+  Configured modules ({{ len .Values.socialRegistry.odoo.modules }}):
+  {{- range .Values.socialRegistry.odoo.modules }}
+    - {{ . }}
+  {{- end }}
+
+  Auto-install modules: {{ .Values.socialRegistry.odoo.autoInstallModules }}
+
+  NOTE: The configured module list is passed to Odoo as runtime
+  configuration only.  Helm does NOT validate whether the modules
+  exist in the image.  Ensure your custom image includes all listed
+  modules before enabling autoInstallModules.
+
+{{- end }}
+
+{{- if .Values.odkCentral.enabled }}
+
+ODK Central:
+  {{- if .Values.odkCentral.ingress.enabled }}
+  URL: {{ if .Values.odkCentral.ingress.tls.enabled }}https{{ else }}http{{ end }}://{{ .Values.odkCentral.ingress.hostname }}
+  {{- else }}
+  Service: {{ include "odk-central.frontendFullname" . }}:80
+  {{- end }}
+  Admin email: {{ .Values.odkCentral.admin.email }}
+
+  {{- if .Values.odkCentral.database.internal.enabled }}
+  Database: internal PostgreSQL (StatefulSet)
+  {{- else }}
+  Database: external ({{ .Values.odkCentral.database.external.host }}:{{ .Values.odkCentral.database.external.port }})
+  {{- end }}
+{{- end }}
+
+==================================================================
+  Post-install steps:
+  1. Verify pods are running:
+     kubectl get pods -l app.kubernetes.io/instance={{ .Release.Name }} -n {{ .Release.Namespace }}
+  2. Check ingress:
+     kubectl get ingress -n {{ .Release.Namespace }}
+  3. For Social Registry, ensure your custom image is built and
+     pushed before first access.
+==================================================================

@@ -1,0 +1,20 @@
+annotations:
+  catalog.cattle.io/display-name: DAD Farmer Registry
+apiVersion: v2
+name: dad-farmer-registry
+description: >-
+  Umbrella Helm chart for the DAD Farmer Registry, built on OpenG2P Social
+  Registry (Odoo 17) with ODK Central for field data collection.
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+icon: https://openg2p.github.io/openg2p-helm/openg2p-logo.png
+keywords:
+  - openg2p
+  - social-registry
+  - farmer-registry
+  - odk-central
+  - odoo
+maintainers:
+  - name: VS One World
+    email: Chamath.Ellawala@global.vsoneworld.com

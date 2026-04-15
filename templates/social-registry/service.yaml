@@ -1,0 +1,17 @@
+{{- if .Values.socialRegistry.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "social-registry.fullname" . }}
+  labels:
+    {{- include "social-registry.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.socialRegistry.service.type }}
+  ports:
+    - port: {{ .Values.socialRegistry.service.port }}
+      targetPort: {{ .Values.socialRegistry.service.targetPort | default 8069 }}
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "social-registry.selectorLabels" . | nindent 4 }}
+{{- end }}

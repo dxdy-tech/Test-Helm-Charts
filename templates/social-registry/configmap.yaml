@@ -1,0 +1,37 @@
+{{- if .Values.socialRegistry.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "social-registry.configmapName" . }}
+  labels:
+    {{- include "social-registry.labels" . | nindent 4 }}
+data:
+  PROXY_MODE: {{ .Values.socialRegistry.odoo.proxyMode | quote }}
+  LIST_DB: {{ .Values.socialRegistry.odoo.listDb | ternary "True" "False" | quote }}
+  WORKERS: {{ .Values.socialRegistry.odoo.workers | quote }}
+  MAX_CRON_THREADS: {{ .Values.socialRegistry.odoo.maxCronThreads | quote }}
+  DBFILTER: {{ .Values.socialRegistry.odoo.dbfilter | quote }}
+  SERVER_WIDE_MODULES: {{ .Values.socialRegistry.odoo.serverWideModules | quote }}
+  DB_HOST: {{ .Values.socialRegistry.externalPostgresql.host | quote }}
+  DB_PORT: {{ .Values.socialRegistry.externalPostgresql.port | quote }}
+  DB_NAME: {{ .Values.socialRegistry.externalPostgresql.database | quote }}
+  DB_USER: {{ .Values.socialRegistry.externalPostgresql.username | quote }}
+  DB_SSLMODE: {{ .Values.socialRegistry.externalPostgresql.sslmode | quote }}
+  {{- if .Values.socialRegistry.odoo.modules }}
+  ODOO_MODULES: {{ include "social-registry.moduleList" . | quote }}
+  {{- end }}
+  ODOO_AUTO_INSTALL_MODULES: {{ .Values.socialRegistry.odoo.autoInstallModules | quote }}
+  {{- if .Values.socialRegistry.externalKeycloak.issuerUrl }}
+  OIDC_ISSUER_URL: {{ .Values.socialRegistry.externalKeycloak.issuerUrl | quote }}
+  OIDC_CLIENT_ID: {{ .Values.socialRegistry.externalKeycloak.clientId | quote }}
+  {{- end }}
+  {{- if .Values.socialRegistry.externalMinio.endpoint }}
+  MINIO_ENDPOINT: {{ .Values.socialRegistry.externalMinio.endpoint | quote }}
+  MINIO_BUCKET: {{ .Values.socialRegistry.externalMinio.bucket | quote }}
+  MINIO_REGION: {{ .Values.socialRegistry.externalMinio.region | quote }}
+  MINIO_SECURE: {{ .Values.socialRegistry.externalMinio.secure | quote }}
+  {{- end }}
+  {{- if and .Values.socialRegistry.odkIntegration.enabled .Values.socialRegistry.odkIntegration.centralUrl }}
+  ODK_CENTRAL_URL: {{ .Values.socialRegistry.odkIntegration.centralUrl | quote }}
+  {{- end }}
+{{- end }}

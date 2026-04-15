@@ -1,0 +1,35 @@
+{{- if and .Values.socialRegistry.enabled .Values.socialRegistry.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "social-registry.fullname" . }}
+  labels:
+    {{- include "social-registry.labels" . | nindent 4 }}
+  {{- with .Values.socialRegistry.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.socialRegistry.ingress.className }}
+  ingressClassName: {{ .Values.socialRegistry.ingress.className }}
+  {{- end }}
+  {{- if .Values.socialRegistry.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.socialRegistry.ingress.hostname | quote }}
+      {{- if .Values.socialRegistry.ingress.tls.secretName }}
+      secretName: {{ .Values.socialRegistry.ingress.tls.secretName }}
+      {{- end }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.socialRegistry.ingress.hostname | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "social-registry.fullname" . }}
+                port:
+                  number: {{ .Values.socialRegistry.service.port }}
+{{- end }}

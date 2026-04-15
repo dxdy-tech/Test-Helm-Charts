@@ -1,0 +1,462 @@
+## ---------------------------------------------------------------------------
+## Global settings
+## ---------------------------------------------------------------------------
+global:
+  nameOverride: ""
+  fullnameOverride: ""
+
+## ---------------------------------------------------------------------------
+## Social Registry (Odoo 17 / OpenG2P)
+## ---------------------------------------------------------------------------
+socialRegistry:
+  enabled: true
+
+  replicaCount: 1
+
+  ## -- Custom Odoo image containing OpenG2P addons.
+  ## The operator is responsible for building an image that includes all
+  ## modules listed under socialRegistry.odoo.modules.
+  image:
+    repository: ""
+    tag: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  # - name: my-registry-secret
+
+  ## -- ServiceAccount
+  serviceAccount:
+    create: true
+    name: ""
+    annotations: {}
+
+  ## -- Pod-level settings
+  podAnnotations: {}
+  podLabels: {}
+
+  ## -- Security contexts
+  podSecurityContext:
+    fsGroup: 1000
+  containerSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+    capabilities:
+      drop:
+        - ALL
+
+  ## -- Kubernetes Service
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 8069
+
+  ## -- Ingress (Kubernetes-native, not OpenShift Route)
+  ingress:
+    enabled: true
+    className: ""
+    hostname: ""
+    tls:
+      enabled: true
+      secretName: ""
+    annotations: {}
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+
+  ## -- Persistence (NFS-backed or storageClass-managed)
+  persistence:
+    enabled: true
+    existingClaim: ""
+    storageClass: ""
+    accessModes:
+      - ReadWriteMany
+    size: 10Gi
+    ## Mount path inside the Odoo container for filestore
+    mountPath: /var/lib/odoo/filestore
+
+  ## -- External PostgreSQL (no in-cluster PG for Social Registry)
+  externalPostgresql:
+    host: ""
+    port: 5432
+    database: "socialregistrydb"
+    username: "sruser"
+    existingSecret: ""
+    secretKeys:
+      password: password
+    sslmode: require
+
+  ## -- External Keycloak
+  externalKeycloak:
+    issuerUrl: ""
+    baseUrl: ""
+    realm: "master"
+    clientId: ""
+    existingSecret: ""
+    secretKeys:
+      clientSecret: client-secret
+
+  ## -- External MinIO / S3
+  externalMinio:
+    endpoint: ""
+    bucket: "social-registry"
+    region: ""
+    secure: true
+    existingSecret: ""
+    secretKeys:
+      accessKey: access-key
+      secretKey: secret-key
+
+  ## -- ODK Central integration (consumed by g2p_odk_importer / g2p_odk_user_mapping)
+  odkIntegration:
+    enabled: true
+    centralUrl: ""
+    existingSecret: ""
+    secretKeys:
+      apiToken: api-token
+
+  ## -- Odoo runtime configuration
+  odoo:
+    ## Proxy mode (set True when behind a reverse proxy / ingress)
+    proxyMode: true
+    ## Whether to list databases on the login screen
+    listDb: false
+    ## Number of Odoo worker processes
+    workers: 4
+    ## Maximum cron thread count
+    maxCronThreads: 2
+    ## Database filter regex
+    dbfilter: ".*"
+    ## Server-wide modules loaded at startup
+    serverWideModules: "web"
+    ## Email used for the Odoo admin account
+    adminEmail: "admin@example.com"
+    ## Existing secret that contains the Odoo admin password
+    adminPasswordExistingSecret: ""
+    adminPasswordSecretKey: "admin-password"
+
+    ## -- Module installation behavior
+    ## When autoInstallModules is false (default), the module list is passed
+    ## into the ODOO_MODULES env var but Odoo will NOT force-install them on
+    ## startup.  The operator must trigger installation manually or set this
+    ## to true after verifying the image contains all listed modules.
+    autoInstallModules: false
+
+    ## -- Configurable module list
+    ## These names are passed as-is into runtime configuration.  Helm does
+    ## NOT validate whether the modules actually exist in the image.
+    ## The custom image is solely responsible for containing these addons.
+    modules:
+      - g2p_agent_portal_base
+      - g2p_registry_individual
+      - g2p_registry_group
+      - g2p_registry_membership
+      - g2p_registry_dashboard
+      - g2p_registry_theme
+      - g2p_odk_importer
+      - g2p_registry_rest_api
+      - g2p_registry_deduplication_deduplicator
+      - g2p_registration_portal_base
+      - g2p_odk_user_mapping
+      ## -- Future DAD custom modules (uncomment when image includes them)
+      # - dad_farmer_registry
+      # - dad_rest_api
+
+    ## Extra CLI arguments passed to the odoo binary
+    extraArgs: []
+
+  ## -- Additional environment variables injected into the Odoo container
+  extraEnv: []
+  # - name: EXTRA_VAR
+  #   value: "some-value"
+
+  ## -- Extra volumes / volumeMounts
+  extraVolumes: []
+  extraVolumeMounts: []
+
+  ## -- Resource requests and limits
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 4Gi
+
+  ## -- Horizontal Pod Autoscaler
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 75
+    targetMemoryUtilizationPercentage: ""
+
+  ## -- Pod Disruption Budget
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+    # maxUnavailable: 1
+
+  ## -- NetworkPolicy
+  networkPolicy:
+    enabled: true
+
+  ## -- Node scheduling
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  ## -- Probes
+  startupProbe:
+    enabled: true
+    httpGet:
+      path: /web/health
+      port: http
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 30
+    successThreshold: 1
+
+  livenessProbe:
+    enabled: true
+    httpGet:
+      path: /web/health
+      port: http
+    initialDelaySeconds: 60
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
+
+  readinessProbe:
+    enabled: true
+    httpGet:
+      path: /web/health
+      port: http
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
+
+## ---------------------------------------------------------------------------
+## ODK Central
+## ---------------------------------------------------------------------------
+odkCentral:
+  enabled: true
+
+  replicaCount: 1
+
+  ## -- Image
+  image:
+    repository: ghcr.io/getodk/central-backend
+    tag: v2025.2.1
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+
+  ## -- Frontend (nginx) image
+  frontend:
+    image:
+      repository: ghcr.io/getodk/central-nginx
+      tag: v2025.2.1
+      pullPolicy: IfNotPresent
+    replicaCount: 1
+    containerPort: 80
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+  ## -- ServiceAccount
+  serviceAccount:
+    create: true
+    name: ""
+    annotations: {}
+
+  ## -- Pod-level settings
+  podAnnotations: {}
+  podLabels: {}
+
+  podSecurityContext:
+    fsGroup: 1000
+  containerSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+    capabilities:
+      drop:
+        - ALL
+
+  ## -- Kubernetes Service
+  service:
+    type: ClusterIP
+    port: 80
+
+  ## -- Ingress
+  ingress:
+    enabled: true
+    className: ""
+    hostname: ""
+    tls:
+      enabled: true
+      secretName: ""
+    annotations: {}
+
+  ## -- Admin account
+  admin:
+    email: ""
+    passwordExistingSecret: ""
+    passwordSecretKey: password
+
+  ## -- Persistence
+  persistence:
+    enabled: true
+    existingClaim: ""
+    storageClass: ""
+    accessModes:
+      - ReadWriteOnce
+    size: 20Gi
+
+  ## -- Database configuration
+  database:
+    ## Set internal.enabled to true to deploy a PostgreSQL StatefulSet for ODK
+    internal:
+      enabled: false
+      image:
+        repository: postgres
+        tag: "16-alpine"
+        pullPolicy: IfNotPresent
+      storage:
+        size: 10Gi
+        storageClass: ""
+      resources:
+        requests:
+          cpu: 250m
+          memory: 256Mi
+        limits:
+          cpu: "1"
+          memory: 1Gi
+    external:
+      host: ""
+      port: 5432
+      database: "odkdb"
+      username: "odkuser"
+      existingSecret: ""
+      secretKeys:
+        password: password
+      ssl: "null"
+
+  ## -- Email / SMTP
+  email:
+    from: ""
+    host: ""
+    port: 25
+    secure: false
+    ignoreTls: true
+    user: ""
+    password: ""
+
+  ## -- Enketo integration
+  enketo:
+    enabled: true
+    image:
+      repository: ghcr.io/getodk/central-enketo
+      tag: v2025.2.1
+      pullPolicy: IfNotPresent
+    replicas: 1
+    apiKey: ""
+    existingSecret: ""
+    secretKey: enketo-api-key
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+
+  ## -- Pyxform service
+  pyxform:
+    enabled: true
+    image:
+      repository: ghcr.io/getodk/pyxform-http
+      tag: v2025.2.1
+      pullPolicy: IfNotPresent
+    replicas: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+  ## -- Resource requests and limits (backend)
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 2Gi
+
+  ## -- Horizontal Pod Autoscaler
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 75
+    targetMemoryUtilizationPercentage: ""
+
+  ## -- Pod Disruption Budget
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+  ## -- NetworkPolicy
+  networkPolicy:
+    enabled: true
+
+  ## -- Node scheduling
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  ## -- Probes (backend)
+  startupProbe:
+    enabled: true
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 0
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 30
+    successThreshold: 1
+
+  livenessProbe:
+    enabled: true
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 20
+    periodSeconds: 60
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
+
+  readinessProbe:
+    enabled: true
+    tcpSocket:
+      port: http
+    initialDelaySeconds: 0
+    periodSeconds: 20
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
+
+  ## -- Extra environment variables for the backend
+  extraEnv: []
+  extraVolumes: []
+  extraVolumeMounts: []

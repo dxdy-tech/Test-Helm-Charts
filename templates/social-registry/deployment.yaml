@@ -1,0 +1,157 @@
+{{- if .Values.socialRegistry.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "social-registry.fullname" . }}
+  labels:
+    {{- include "social-registry.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.socialRegistry.autoscaling.enabled }}
+  replicas: {{ .Values.socialRegistry.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "social-registry.selectorLabels" . | nindent 6 }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/social-registry/configmap.yaml") . | sha256sum }}
+        {{- with .Values.socialRegistry.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "social-registry.selectorLabels" . | nindent 8 }}
+        {{- with .Values.socialRegistry.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "social-registry.serviceAccountName" . }}
+      {{- with .Values.socialRegistry.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.socialRegistry.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.socialRegistry.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.socialRegistry.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.socialRegistry.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: odoo
+          image: "{{ .Values.socialRegistry.image.repository }}:{{ .Values.socialRegistry.image.tag }}"
+          imagePullPolicy: {{ .Values.socialRegistry.image.pullPolicy }}
+          {{- with .Values.socialRegistry.containerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: 8069
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "social-registry.configmapName" . }}
+          env:
+            {{- /* Database password from existing secret */}}
+            {{- if .Values.socialRegistry.externalPostgresql.existingSecret }}
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.socialRegistry.externalPostgresql.existingSecret }}
+                  key: {{ .Values.socialRegistry.externalPostgresql.secretKeys.password }}
+            {{- end }}
+            {{- /* Odoo admin password */}}
+            {{- if .Values.socialRegistry.odoo.adminPasswordExistingSecret }}
+            - name: ODOO_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.socialRegistry.odoo.adminPasswordExistingSecret }}
+                  key: {{ .Values.socialRegistry.odoo.adminPasswordSecretKey }}
+            {{- end }}
+            {{- /* Keycloak client secret */}}
+            {{- if .Values.socialRegistry.externalKeycloak.existingSecret }}
+            - name: OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.socialRegistry.externalKeycloak.existingSecret }}
+                  key: {{ .Values.socialRegistry.externalKeycloak.secretKeys.clientSecret }}
+            {{- end }}
+            {{- /* MinIO credentials */}}
+            {{- if .Values.socialRegistry.externalMinio.existingSecret }}
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.socialRegistry.externalMinio.existingSecret }}
+                  key: {{ .Values.socialRegistry.externalMinio.secretKeys.accessKey }}
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.socialRegistry.externalMinio.existingSecret }}
+                  key: {{ .Values.socialRegistry.externalMinio.secretKeys.secretKey }}
+            {{- end }}
+            {{- /* ODK integration token */}}
+            {{- if and .Values.socialRegistry.odkIntegration.enabled .Values.socialRegistry.odkIntegration.existingSecret }}
+            - name: ODK_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.socialRegistry.odkIntegration.existingSecret }}
+                  key: {{ .Values.socialRegistry.odkIntegration.secretKeys.apiToken }}
+            {{- end }}
+            {{- /* Extra Odoo CLI args */}}
+            {{- if .Values.socialRegistry.odoo.extraArgs }}
+            - name: ODOO_EXTRA_ARGS
+              value: {{ join " " .Values.socialRegistry.odoo.extraArgs | quote }}
+            {{- end }}
+            {{- /* User-supplied extra env vars */}}
+            {{- with .Values.socialRegistry.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- if .Values.socialRegistry.startupProbe.enabled }}
+          startupProbe:
+            {{- omit .Values.socialRegistry.startupProbe "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.socialRegistry.livenessProbe.enabled }}
+          livenessProbe:
+            {{- omit .Values.socialRegistry.livenessProbe "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.socialRegistry.readinessProbe.enabled }}
+          readinessProbe:
+            {{- omit .Values.socialRegistry.readinessProbe "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          {{- with .Values.socialRegistry.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            {{- if .Values.socialRegistry.persistence.enabled }}
+            - name: filestore
+              mountPath: {{ .Values.socialRegistry.persistence.mountPath }}
+            {{- end }}
+            {{- with .Values.socialRegistry.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        {{- if .Values.socialRegistry.persistence.enabled }}
+        - name: filestore
+          persistentVolumeClaim:
+            claimName: {{ include "social-registry.pvcName" . }}
+        {{- end }}
+        {{- with .Values.socialRegistry.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+{{- end }}

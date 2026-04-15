@@ -1,0 +1,18 @@
+{{- if and .Values.socialRegistry.enabled .Values.socialRegistry.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "social-registry.fullname" . }}
+  labels:
+    {{- include "social-registry.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "social-registry.selectorLabels" . | nindent 6 }}
+  {{- if .Values.socialRegistry.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ .Values.socialRegistry.podDisruptionBudget.minAvailable }}
+  {{- end }}
+  {{- if .Values.socialRegistry.podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ .Values.socialRegistry.podDisruptionBudget.maxUnavailable }}
+  {{- end }}
+{{- end }}

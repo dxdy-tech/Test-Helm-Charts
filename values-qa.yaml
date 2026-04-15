@@ -1,0 +1,157 @@
+## ---------------------------------------------------------------------------
+## values-qa.yaml — QA environment overrides
+## Usage: helm install dad-farmer-registry . -f values.yaml -f values-qa.yaml
+## ---------------------------------------------------------------------------
+
+## ---------------------------------------------------------------------------
+## Social Registry (Odoo 17 / OpenG2P)
+## ---------------------------------------------------------------------------
+socialRegistry:
+  enabled: true
+  replicaCount: 3
+
+  ## -- Custom Odoo image containing OpenG2P addons.
+  ## The operator is responsible for building an image that includes all
+  ## modules listed under socialRegistry.odoo.modules.
+  image:
+    repository: openg2p/openg2p-social-registry-core
+    tag: "1.5.7"
+    pullPolicy: IfNotPresent
+
+  ## -- Ingress (Kubernetes-native, not OpenShift Route)
+  ingress:
+    enabled: true
+    className: nginx
+    hostname: farmer-registry-qa.agrariandept.gov.lk
+    tls:
+      enabled: true
+      secretName: openg2p-social-registry-tls-qa
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-qa
+      nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+      nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+
+  ## -- External PostgreSQL (no in-cluster PG for Social Registry)
+  externalPostgresql:
+    host: postgres-svc.farmer-registry-qa.svc.cluster.local
+    port: 5432
+    database: social_registry
+    username: social_registry_user
+    existingSecret: openg2p-social-registry-db-qa
+    sslmode: require
+
+  ## -- External Keycloak
+  externalKeycloak:
+    issuerUrl: https://keycloak-qa.apps.sovecloud.akaza.lk/realms/openg2p-qa
+    baseUrl: https://keycloak-qa.apps.sovecloud.akaza.lk
+    realm: openg2p-qa
+    clientId: openg2p-social-registry-qa
+    existingSecret: openg2p-social-registry-keycloak-qa
+
+  ## -- External MinIO / S3
+  externalMinio:
+    endpoint: minio-svc.farmer-registry-qa.svc.cluster.local:9000
+    bucket: social-registry
+    secure: true
+    existingSecret: openg2p-social-registry-minio-qa
+
+  ## -- ODK Central integration (consumed by g2p_odk_importer / g2p_odk_user_mapping)
+  odkIntegration:
+    centralUrl: https://odk-qa.apps.sovecloud.akaza.lk
+
+  ## -- Odoo runtime configuration
+  odoo:
+    ## When false, module list is exposed as env var but NOT force-installed.
+    autoInstallModules: true
+    ## Number of Odoo worker processes
+    workers: 6
+    ## Maximum cron thread count
+    maxCronThreads: 2
+    ## Proxy mode (set True when behind a reverse proxy / ingress)
+    proxyMode: true
+
+  ## -- Resource requests and limits
+  resources:
+    requests:
+      cpu: "1"
+      memory: 2Gi
+    limits:
+      cpu: "4"
+      memory: 8Gi
+
+  ## -- Horizontal Pod Autoscaler
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 2
+    targetCPUUtilizationPercentage: 70
+
+  ## -- Pod Disruption Budget
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 2
+
+  ## -- NetworkPolicy
+  networkPolicy:
+    enabled: true
+
+## ---------------------------------------------------------------------------
+## ODK Central
+## ---------------------------------------------------------------------------
+odkCentral:
+  enabled: true
+  replicaCount: 1
+
+  ## -- Ingress
+  ingress:
+    enabled: true
+    className: nginx
+    hostname: odk-qa.agrariandept.gov.lk
+    tls:
+      enabled: true
+      secretName: openg2p-odk-tls-qa
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-qa
+      nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+
+  ## -- Admin account
+  admin:
+    email: Chamath.Ellawala@global.vsoneworld.com
+    passwordExistingSecret: openg2p-social-registry-admin-qa
+
+  ## -- Database configuration
+  database:
+    ## No internal PG — using external database
+    internal:
+      enabled: false
+    external:
+      host: postgres-svc.farmer-registry-qa.svc.cluster.local
+      port: 5432
+      database: odk
+      username: odk_user
+      existingSecret: openg2p-odk-db-qa
+
+  ## -- Resource requests and limits (backend)
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 4Gi
+
+  ## -- Horizontal Pod Autoscaler
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 2
+    targetCPUUtilizationPercentage: 70
+
+  ## -- Pod Disruption Budget
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+  ## -- NetworkPolicy
+  networkPolicy:
+    enabled: true
