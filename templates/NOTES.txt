@@ -12,8 +12,8 @@ Social Registry (Odoo / OpenG2P):
   Service: {{ include "social-registry.fullname" . }}:{{ .Values.socialRegistry.service.port }}
   {{- end }}
 
-  Configured modules ({{ len .Values.socialRegistry.odoo.modules }}):
-  {{- range .Values.socialRegistry.odoo.modules }}
+  Configured modules ({{ .Values.socialRegistry.odoo.modules | default list | len }}):
+  {{- range (.Values.socialRegistry.odoo.modules | default list) }}
     - {{ . }}
   {{- end }}
 
