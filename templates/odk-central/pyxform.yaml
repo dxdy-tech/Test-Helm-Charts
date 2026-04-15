@@ -24,6 +24,18 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with .Values.odkCentral.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.odkCentral.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.odkCentral.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: pyxform
           image: "{{ (.Values.odkCentral.pyxform.image).repository | default "ghcr.io/getodk/central-pyxform" }}:{{ (.Values.odkCentral.pyxform.image).tag | default "v2025.2.1" }}"

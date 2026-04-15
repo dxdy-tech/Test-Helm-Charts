@@ -108,6 +108,15 @@ socialRegistry:
   networkPolicy:
     enabled: true
 
+  ## -- Schedule on worker nodes only
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: node-role.kubernetes.io/control-plane
+                operator: DoesNotExist
+
 ## ---------------------------------------------------------------------------
 ## ODK Central
 ## ---------------------------------------------------------------------------
@@ -180,3 +189,12 @@ odkCentral:
   ## -- NetworkPolicy
   networkPolicy:
     enabled: true
+
+  ## -- Schedule on worker nodes only (RKE2 control-plane anti-affinity)
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: node-role.kubernetes.io/control-plane
+                operator: DoesNotExist
