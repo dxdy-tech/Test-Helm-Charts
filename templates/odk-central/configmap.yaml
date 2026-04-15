@@ -44,7 +44,7 @@ data:
     #!/usr/bin/env bash
     set -euo pipefail
     echo "generating local service configuration..."
-    envsubst < /usr/share/odk/config.json.template > /usr/odk/config/local.json
+    /scripts/envsub.awk < /usr/share/odk/config.json.template > /usr/odk/config/local.json
     echo "running migrations..."
     node ./lib/bin/run-migrations
     echo "starting cron..."
@@ -96,7 +96,7 @@ data:
     set -euo pipefail
     export DOLLAR='$'
     echo "writing fresh nginx config..."
-    envsubst < /usr/share/odk/nginx/odk.conf.template > /etc/nginx/conf.d/odk.conf
+    /scripts/envsub.awk < /usr/share/odk/nginx/odk.conf.template > /etc/nginx/conf.d/odk.conf
     rm -f /etc/nginx/conf.d/redirector.conf
     exec nginx -g "daemon off;"
 {{- end }}

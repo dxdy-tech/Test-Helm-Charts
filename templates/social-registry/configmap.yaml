@@ -12,11 +12,13 @@ data:
   MAX_CRON_THREADS: {{ .Values.socialRegistry.odoo.maxCronThreads | quote }}
   DBFILTER: {{ .Values.socialRegistry.odoo.dbfilter | quote }}
   SERVER_WIDE_MODULES: {{ .Values.socialRegistry.odoo.serverWideModules | quote }}
-  DB_HOST: {{ .Values.socialRegistry.externalPostgresql.host | quote }}
-  DB_PORT: {{ .Values.socialRegistry.externalPostgresql.port | quote }}
-  DB_NAME: {{ .Values.socialRegistry.externalPostgresql.database | quote }}
-  DB_USER: {{ .Values.socialRegistry.externalPostgresql.username | quote }}
+  ODOO_DATABASE_HOST: {{ .Values.socialRegistry.externalPostgresql.host | quote }}
+  ODOO_DATABASE_PORT_NUMBER: {{ .Values.socialRegistry.externalPostgresql.port | quote }}
+  ODOO_DATABASE_NAME: {{ .Values.socialRegistry.externalPostgresql.database | quote }}
+  ODOO_DATABASE_USER: {{ .Values.socialRegistry.externalPostgresql.username | quote }}
   DB_SSLMODE: {{ .Values.socialRegistry.externalPostgresql.sslmode | quote }}
+  ALLOW_EMPTY_PASSWORD: "no"
+  ODOO_EMAIL: {{ .Values.socialRegistry.odoo.email | default "admin@example.com" | quote }}
   {{- if .Values.socialRegistry.odoo.modules }}
   ODOO_MODULES: {{ include "social-registry.moduleList" . | quote }}
   {{- end }}

@@ -219,7 +219,7 @@ spec:
               protocol: TCP
           env:
             - name: BACKEND_URL
-              value: "{{ include "odk-central.backendFullname" . }}:{{ .Values.odkCentral.service.port | default 80 }}"
+              value: {{ include "odk-central.backendFullname" . | quote }}
             {{- if .Values.odkCentral.enketo.enabled }}
             - name: ENKETO_HOST
               value: {{ include "odk-central.enketoFullname" . | quote }}

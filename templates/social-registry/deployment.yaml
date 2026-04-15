@@ -69,7 +69,7 @@ spec:
           env:
             {{- /* Database password from existing secret */}}
             {{- if .Values.socialRegistry.externalPostgresql.existingSecret }}
-            - name: DB_PASSWORD
+            - name: ODOO_DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.socialRegistry.externalPostgresql.existingSecret }}
@@ -77,11 +77,11 @@ spec:
             {{- end }}
             {{- /* Odoo admin password */}}
             {{- if .Values.socialRegistry.odoo.adminPasswordExistingSecret }}
-            - name: ODOO_ADMIN_PASSWORD
+            - name: ODOO_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.socialRegistry.odoo.adminPasswordExistingSecret }}
-                  key: {{ .Values.socialRegistry.odoo.adminPasswordSecretKey }}
+                  key: {{ (.Values.socialRegistry.odoo).adminPasswordSecretKey | default "password" }}
             {{- end }}
             {{- /* Keycloak client secret */}}
             {{- if .Values.socialRegistry.externalKeycloak.existingSecret }}
