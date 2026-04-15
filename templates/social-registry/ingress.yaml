@@ -31,5 +31,5 @@ spec:
               service:
                 name: {{ include "social-registry.fullname" . }}
                 port:
-                  number: {{ .Values.socialRegistry.service.port }}
+                  number: {{ .Values.socialRegistry.service.port | default 80 }}
 {{- end }}

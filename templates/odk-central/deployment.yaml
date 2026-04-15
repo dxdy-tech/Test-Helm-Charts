@@ -70,6 +70,13 @@ spec:
               value: {{ .Values.odkCentral.ingress.hostname | quote }}
             - name: SYSADMIN_EMAIL
               value: {{ .Values.odkCentral.admin.email | quote }}
+            {{- if .Values.odkCentral.admin.passwordExistingSecret }}
+            - name: SYSADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.odkCentral.admin.passwordExistingSecret }}
+                  key: {{ .Values.odkCentral.admin.passwordSecretKey | default "password" }}
+            {{- end }}
             - name: DB_HOST
               value: {{ include "odk-central.dbHost" . | quote }}
             - name: DB_PORT

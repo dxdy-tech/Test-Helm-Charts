@@ -19,17 +19,17 @@ socialRegistry:
     pullPolicy: IfNotPresent
 
   ## -- Ingress (Kubernetes-native, not OpenShift Route)
-  ingress:
-    enabled: true
-    className: nginx
-    hostname: farmer-registry-qa.agrariandept.gov.lk
-    tls:
-      enabled: true
-      secretName: openg2p-social-registry-tls-qa
-    annotations:
-      cert-manager.io/cluster-issuer: letsencrypt-qa
-      nginx.ingress.kubernetes.io/proxy-body-size: "100m"
-      nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+  # ingress:
+  #   enabled: true
+  #   className: nginx
+  #   hostname: farmer-registry-qa.agrariandept.gov.lk
+  #   tls:
+  #     enabled: true
+  #     secretName: openg2p-social-registry-tls-qa
+  #   annotations:
+  #     cert-manager.io/cluster-issuer: letsencrypt-qa
+  #     nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+  #     nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
 
   ## -- External PostgreSQL (no in-cluster PG for Social Registry)
   externalPostgresql:
@@ -137,16 +137,16 @@ odkCentral:
       pullPolicy: IfNotPresent
 
   ## -- Ingress
-  ingress:
-    enabled: true
-    className: nginx
-    hostname: odk-qa.agrariandept.gov.lk
-    tls:
-      enabled: true
-      secretName: openg2p-odk-tls-qa
-    annotations:
-      cert-manager.io/cluster-issuer: letsencrypt-qa
-      nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+  # ingress:
+  #   enabled: true
+  #   className: nginx
+  #   hostname: odk-qa.agrariandept.gov.lk
+  #   tls:
+  #     enabled: true
+  #     secretName: openg2p-odk-tls-qa
+  #   annotations:
+  #     cert-manager.io/cluster-issuer: letsencrypt-qa
+  #     nginx.ingress.kubernetes.io/proxy-body-size: "100m"
 
   ## -- Admin account
   admin:
