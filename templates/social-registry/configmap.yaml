@@ -6,8 +6,8 @@ metadata:
   labels:
     {{- include "social-registry.labels" . | nindent 4 }}
 data:
-  PROXY_MODE: {{ .Values.socialRegistry.odoo.proxyMode | quote }}
-  LIST_DB: {{ .Values.socialRegistry.odoo.listDb | ternary "True" "False" | quote }}
+  PROXY_MODE: {{ if .Values.socialRegistry.odoo.proxyMode }}"True"{{ else }}"False"{{ end }}
+  LIST_DB: {{ if .Values.socialRegistry.odoo.listDb }}"True"{{ else }}"False"{{ end }}
   WORKERS: {{ .Values.socialRegistry.odoo.workers | quote }}
   MAX_CRON_THREADS: {{ .Values.socialRegistry.odoo.maxCronThreads | quote }}
   DBFILTER: {{ .Values.socialRegistry.odoo.dbfilter | quote }}

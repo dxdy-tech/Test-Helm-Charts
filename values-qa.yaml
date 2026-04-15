@@ -8,7 +8,7 @@
 ## ---------------------------------------------------------------------------
 socialRegistry:
   enabled: true
-  replicaCount: 3
+  replicaCount: 1
 
   ## -- Custom Odoo image containing OpenG2P addons.
   ## The operator is responsible for building an image that includes all
