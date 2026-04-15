@@ -1,4 +1,4 @@
-{{- if and .Values.odkCentral.enabled .Values.odkCentral.enketo.enabled }}
+{{- if .Values.odkCentral.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -79,7 +79,7 @@ spec:
     app.kubernetes.io/name: {{ include "farmer-registry.name" . }}-odk-enketo
     app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
-{{- if and .Values.odkCentral.enabled .Values.odkCentral.enketo.enabled (not .Values.odkCentral.enketo.existingSecret) }}
+{{- if and .Values.odkCentral.enabled (not (.Values.odkCentral.enketo).existingSecret) }}
 ---
 ## Auto-generated Enketo API key secret (only if no existing secret provided)
 apiVersion: v1

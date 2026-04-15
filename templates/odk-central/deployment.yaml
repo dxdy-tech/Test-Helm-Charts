@@ -86,8 +86,8 @@ spec:
             - name: DB_USER
               value: {{ include "odk-central.dbUser" . | quote }}
             - name: DB_SSL
-              value: {{ .Values.odkCentral.database.external.ssl | default "null" | quote }}
-            {{- if or .Values.odkCentral.database.internal.enabled .Values.odkCentral.database.external.existingSecret }}
+              value: {{ ((.Values.odkCentral.database).external).ssl | default "null" | quote }}
+            {{- if or (((.Values.odkCentral.database).internal).enabled) (((.Values.odkCentral.database).external).existingSecret) }}
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -108,15 +108,15 @@ spec:
             - name: PYXFORM_PORT
               value: "80"
             - name: EMAIL_FROM
-              value: {{ .Values.odkCentral.email.from | default (printf "no-reply@%s" .Values.odkCentral.ingress.hostname) | quote }}
+              value: {{ (.Values.odkCentral.email).from | default (printf "no-reply@%s" .Values.odkCentral.ingress.hostname) | quote }}
             - name: EMAIL_HOST
-              value: {{ .Values.odkCentral.email.host | quote }}
+              value: {{ (.Values.odkCentral.email).host | default "localhost" | quote }}
             - name: EMAIL_PORT
-              value: {{ .Values.odkCentral.email.port | quote }}
+              value: {{ (.Values.odkCentral.email).port | default 25 | quote }}
             - name: EMAIL_SECURE
-              value: {{ .Values.odkCentral.email.secure | quote }}
+              value: {{ (.Values.odkCentral.email).secure | default false | quote }}
             - name: EMAIL_IGNORE_TLS
-              value: {{ .Values.odkCentral.email.ignoreTls | quote }}
+              value: {{ (.Values.odkCentral.email).ignoreTls | default true | quote }}
             {{- with .Values.odkCentral.extraEnv }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
