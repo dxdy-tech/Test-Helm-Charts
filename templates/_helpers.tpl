@@ -278,7 +278,7 @@ Determine the ODK Central database password secret key.
 ODK Central Enketo secret name (for the API key).
 */}}
 {{- define "odk-central.enketoSecretName" -}}
-{{- if .Values.odkCentral.enketo.existingSecret }}
+{{- if (.Values.odkCentral.enketo).existingSecret }}
 {{- .Values.odkCentral.enketo.existingSecret }}
 {{- else }}
 {{- include "odk-central.enketoFullname" . }}

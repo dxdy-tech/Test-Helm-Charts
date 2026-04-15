@@ -94,7 +94,6 @@ spec:
                   name: {{ include "odk-central.dbPasswordSecretName" . }}
                   key: {{ include "odk-central.dbPasswordSecretKey" . }}
             {{- end }}
-            {{- if .Values.odkCentral.enketo.enabled }}
             - name: ENKETO_HOST
               value: {{ include "odk-central.enketoFullname" . | quote }}
             - name: ENKETO_PORT
@@ -103,14 +102,11 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ include "odk-central.enketoSecretName" . }}
-                  key: {{ .Values.odkCentral.enketo.secretKey | default "enketo-api-key" }}
-            {{- end }}
-            {{- if .Values.odkCentral.pyxform.enabled }}
+                  key: {{ (.Values.odkCentral.enketo).secretKey | default "enketo-api-key" }}
             - name: PYXFORM_HOST
               value: {{ include "odk-central.pyxformFullname" . | quote }}
             - name: PYXFORM_PORT
               value: "80"
-            {{- end }}
             - name: EMAIL_FROM
               value: {{ .Values.odkCentral.email.from | default (printf "no-reply@%s" .Values.odkCentral.ingress.hostname) | quote }}
             - name: EMAIL_HOST
@@ -220,12 +216,10 @@ spec:
           env:
             - name: BACKEND_URL
               value: {{ include "odk-central.backendFullname" . | quote }}
-            {{- if .Values.odkCentral.enketo.enabled }}
             - name: ENKETO_HOST
               value: {{ include "odk-central.enketoFullname" . | quote }}
             - name: ENKETO_PORT
               value: "8005"
-            {{- end }}
           startupProbe:
             httpGet:
               path: /

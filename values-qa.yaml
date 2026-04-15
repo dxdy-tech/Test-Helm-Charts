@@ -61,6 +61,10 @@ socialRegistry:
 
   ## -- Odoo runtime configuration
   odoo:
+    ## Odoo admin email (used by Bitnami entrypoint for ODOO_EMAIL)
+    email: "devops@global.vsoneworld.com"
+    ## Existing secret holding the Odoo master admin password
+    adminPasswordExistingSecret: openg2p-social-registry-admin-qa
     ## When false, module list is exposed as env var but NOT force-installed.
     autoInstallModules: true
     ## Number of Odoo worker processes
