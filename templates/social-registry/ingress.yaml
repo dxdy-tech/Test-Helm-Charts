@@ -17,8 +17,10 @@ spec:
   tls:
     - hosts:
         - {{ .Values.socialRegistry.ingress.hostname | quote }}
-      {{- if .Values.socialRegistry.ingress.tls.secretName }}
-      secretName: {{ .Values.socialRegistry.ingress.tls.secretName }}
+      {{- if .Values.socialRegistry.ingress.tls.existingSecretName }}
+      secretName: {{ .Values.socialRegistry.ingress.tls.existingSecretName }}
+      {{- else }}
+      secretName: {{ printf "%s-tls" (include "social-registry.fullname" .) }}
       {{- end }}
   {{- end }}
   rules:
@@ -31,5 +33,5 @@ spec:
               service:
                 name: {{ include "social-registry.fullname" . }}
                 port:
-                  number: {{ .Values.socialRegistry.service.port }}
+                  number: {{ .Values.socialRegistry.service.port | default 80 }}
 {{- end }}

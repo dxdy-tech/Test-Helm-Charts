@@ -1,66 +1,58 @@
 ## ---------------------------------------------------------------------------
-## values-qa.yaml — QA environment overrides
-## Usage: helm install dad-farmer-registry . -f values.yaml -f values-qa.yaml
+## values-local.yaml — Local environment overrides
+## Usage: helm install dad-farmer-registry . -f values.yaml -f values-local.yaml
 ## ---------------------------------------------------------------------------
-
-global:
-  fullnameOverride: ''
-  imagePullSecrets:
-    - name: dockerhub-creds
-  nameOverride: ''
 
 ## ---------------------------------------------------------------------------
 ## Social Registry (Odoo 17 / OpenG2P)
 ## ---------------------------------------------------------------------------
 socialRegistry:
   enabled: true
-  replicaCount: 2
+  replicaCount: 1
 
   ## -- Custom Odoo image containing OpenG2P addons.
   ## The operator is responsible for building an image that includes all
   ## modules listed under socialRegistry.odoo.modules.
   image:
     repository: vsoneworld/openg2pdad
-    tag: 0.0.17
+    tag: 0.0.13
     pullPolicy: IfNotPresent
   imagePullSecrets:
-    - name: dockerhub-creds
+    - name: vsow-dockerhub
 
-  ## -- Ingress
+  ## -- Ingress (Kubernetes-native, not OpenShift Route)
   ingress:
-    enabled: false
-
-  ## -- Istio VirtualService
-  istio:
     enabled: true
-    gateway: istio-system/main-gateway
-    host: social-registry-openg2p-qa.apps.sovecloud.akaza.lk
+    className: nginx
+    hostname: social-registry.local
+    tls:
+      enabled: true
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+      nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
 
   ## -- External PostgreSQL
   externalPostgresql:
-    host: 172.30.244.47
+    host: pg-postgresql.farmer-registry.svc.cluster.local
     port: 5432
-    database: social_registry
-    username: social_registry_user
-    existingSecret: openg2p-social-registry-db-qa
-    secretKeys:
-      password: password
-    sslmode: require
+    database: social_registry_local
+    username: social_registry_local
+    existingSecret: openg2p-social-registry-db-local
+    sslmode: disable
 
   ## -- External Keycloak
   externalKeycloak:
-    issuerUrl: https://keycloak-qa.apps.sovecloud.akaza.lk/auth/realms/openg2p-qa
-    baseUrl: https://keycloak-qa.apps.sovecloud.akaza.lk
-    realm: openg2p-qa
-    clientId: openg2p-social-registry-qa
-    existingSecret: openg2p-social-registry-keycloak-qa
+    issuerUrl: https://keycloak-qa.apps.sovecloud.akaza.lk/auth/realms/openg2p-local
+    baseUrl: https://keycloak-qa.apps.sovecloud.akaza.lk/auth
+    realm: openg2p-local
+    clientId: openg2p-social-registry-local
+    existingSecret: openg2p-social-registry-keycloak-local
     secretKeys:
       clientSecret: client-secret
 
   ## -- External MinIO / S3
   externalMinio:
     endpoint: 172.30.238.56:9000
-    region: ''
     bucket: social-registry
     secure: true
     existingSecret: openg2p-social-registry-minio-qa
@@ -70,7 +62,7 @@ socialRegistry:
 
   ## -- ODK Central integration (consumed by g2p_odk_importer / g2p_odk_user_mapping)
   odkIntegration:
-    centralUrl: https://odk-qa.apps.sovecloud.akaza.lk
+    centralUrl: http://odk.local
 
   ## -- Odoo runtime configuration
   odoo:
@@ -140,29 +132,20 @@ socialRegistry:
       cpu: 2
       memory: 4Gi
     limits:
-      cpu: 4
+      cpu: 2
       memory: 8Gi
-
-  service:
-    port: 80
-    targetPort: 8069
-    type: ClusterIP
 
   ## -- Persistence
   persistence:
     enabled: true
-    storageClass: nfs-client
-    size: 20Gi
-    accessModes:
-      - ReadWriteMany
-    existingClaim: ''
-    mountPath: /bitnami/odoo
+    storageClass: standard
+    size: 10Gi
 
   ## -- Horizontal Pod Autoscaler
   autoscaling:
     enabled: false
-    minReplicas: 2
-    maxReplicas: 2
+    minReplicas: 1
+    maxReplicas: 1
     targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: ''
 
@@ -176,10 +159,10 @@ socialRegistry:
     enabled: true
 
   ## -- Schedule on worker nodes only
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: node-role.kubernetes.io/control-plane
-                operator: DoesNotExist
+  # affinity:
+  #   nodeAffinity:
+  #     requiredDuringSchedulingIgnoredDuringExecution:
+  #       nodeSelectorTerms:
+  #         - matchExpressions:
+  #             - key: node-role.kubernetes.io/control-plane
+  #               operator: DoesNotExist

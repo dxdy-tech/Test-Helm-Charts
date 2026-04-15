@@ -13,12 +13,20 @@ spec:
     - Ingress
     - Egress
   ingress:
-    ## Allow traffic from the ingress controller
+    ## Allow traffic from the nginx ingress controller
     - from:
         - namespaceSelector: {}
           podSelector:
             matchLabels:
               app.kubernetes.io/name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8069
+    ## Allow traffic from Istio ingress gateway
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: istio-system
       ports:
         - protocol: TCP
           port: 8069
@@ -37,6 +45,16 @@ spec:
           port: 53
         - protocol: TCP
           port: 53
+    ## Istio control plane (istiod)
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: istio-system
+      ports:
+        - protocol: TCP
+          port: 15012
+        - protocol: TCP
+          port: 15010
     ## Allow all TCP egress (PostgreSQL, Keycloak, MinIO, ODK, etc.)
     - to:
         - ipBlock:

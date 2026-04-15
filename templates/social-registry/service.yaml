@@ -6,9 +6,9 @@ metadata:
   labels:
     {{- include "social-registry.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.socialRegistry.service.type }}
+  type: {{ .Values.socialRegistry.service.type | default "ClusterIP" }}
   ports:
-    - port: {{ .Values.socialRegistry.service.port }}
+    - port: {{ .Values.socialRegistry.service.port | default 80 }}
       targetPort: {{ .Values.socialRegistry.service.targetPort | default 8069 }}
       protocol: TCP
       name: http

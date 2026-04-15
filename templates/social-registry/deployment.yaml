@@ -51,6 +51,18 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      initContainers:
+        {{- /* Clear the Bitnami init marker so docker-entrypoint-init.d scripts
+               re-run on every pod start (they are idempotent). */}}
+        - name: clear-init-marker
+          image: "{{ .Values.socialRegistry.image.repository }}:{{ .Values.socialRegistry.image.tag }}"
+          imagePullPolicy: {{ .Values.socialRegistry.image.pullPolicy }}
+          command: ["sh", "-c", "rm -f /bitnami/odoo/.user_scripts_initialized"]
+          volumeMounts:
+            {{- if (.Values.socialRegistry.persistence).enabled }}
+            - name: filestore
+              mountPath: {{ .Values.socialRegistry.persistence.mountPath | default "/var/lib/odoo/filestore" }}
+            {{- end }}
       containers:
         - name: odoo
           image: "{{ .Values.socialRegistry.image.repository }}:{{ .Values.socialRegistry.image.tag }}"
@@ -69,19 +81,19 @@ spec:
           env:
             {{- /* Database password from existing secret */}}
             {{- if .Values.socialRegistry.externalPostgresql.existingSecret }}
-            - name: DB_PASSWORD
+            - name: ODOO_DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.socialRegistry.externalPostgresql.existingSecret }}
-                  key: {{ .Values.socialRegistry.externalPostgresql.secretKeys.password }}
+                  key: {{ (.Values.socialRegistry.externalPostgresql.secretKeys).password | default "password" }}
             {{- end }}
             {{- /* Odoo admin password */}}
             {{- if .Values.socialRegistry.odoo.adminPasswordExistingSecret }}
-            - name: ODOO_ADMIN_PASSWORD
+            - name: ODOO_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.socialRegistry.odoo.adminPasswordExistingSecret }}
-                  key: {{ .Values.socialRegistry.odoo.adminPasswordSecretKey }}
+                  key: {{ (.Values.socialRegistry.odoo).adminPasswordSecretKey | default "password" }}
             {{- end }}
             {{- /* Keycloak client secret */}}
             {{- if .Values.socialRegistry.externalKeycloak.existingSecret }}
@@ -89,7 +101,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.socialRegistry.externalKeycloak.existingSecret }}
-                  key: {{ .Values.socialRegistry.externalKeycloak.secretKeys.clientSecret }}
+                  key: {{ (.Values.socialRegistry.externalKeycloak.secretKeys).clientSecret | default "client-secret" }}
             {{- end }}
             {{- /* MinIO credentials */}}
             {{- if .Values.socialRegistry.externalMinio.existingSecret }}
@@ -97,12 +109,12 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.socialRegistry.externalMinio.existingSecret }}
-                  key: {{ .Values.socialRegistry.externalMinio.secretKeys.accessKey }}
+                  key: {{ (.Values.socialRegistry.externalMinio.secretKeys).accessKey | default "access-key" }}
             - name: MINIO_SECRET_KEY
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.socialRegistry.externalMinio.existingSecret }}
-                  key: {{ .Values.socialRegistry.externalMinio.secretKeys.secretKey }}
+                  key: {{ (.Values.socialRegistry.externalMinio.secretKeys).secretKey | default "secret-key" }}
             {{- end }}
             {{- /* ODK integration token */}}
             {{- if and .Values.socialRegistry.odkIntegration.enabled .Values.socialRegistry.odkIntegration.existingSecret }}
@@ -110,7 +122,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.socialRegistry.odkIntegration.existingSecret }}
-                  key: {{ .Values.socialRegistry.odkIntegration.secretKeys.apiToken }}
+                  key: {{ (.Values.socialRegistry.odkIntegration.secretKeys).apiToken | default "api-token" }}
             {{- end }}
             {{- /* Extra Odoo CLI args */}}
             {{- if .Values.socialRegistry.odoo.extraArgs }}
@@ -138,19 +150,25 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           volumeMounts:
-            {{- if .Values.socialRegistry.persistence.enabled }}
+            {{- if (.Values.socialRegistry.persistence).enabled }}
             - name: filestore
-              mountPath: {{ .Values.socialRegistry.persistence.mountPath }}
+              mountPath: {{ .Values.socialRegistry.persistence.mountPath | default "/var/lib/odoo/filestore" }}
             {{- end }}
+            - name: startup-config
+              mountPath: /docker-entrypoint-init.d
             {{- with .Values.socialRegistry.extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
       volumes:
-        {{- if .Values.socialRegistry.persistence.enabled }}
+        {{- if (.Values.socialRegistry.persistence).enabled }}
         - name: filestore
           persistentVolumeClaim:
             claimName: {{ include "social-registry.pvcName" . }}
         {{- end }}
+        - name: startup-config
+          configMap:
+            name: {{ include "social-registry.fullname" . }}-startup
+            defaultMode: 0755
         {{- with .Values.socialRegistry.extraVolumes }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

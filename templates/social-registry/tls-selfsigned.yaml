@@ -1,0 +1,23 @@
+{{/*
+  Auto-generate a self-signed TLS certificate when:
+  1. socialRegistry is enabled
+  2. Ingress TLS is enabled
+  3. No existingSecretName is provided
+*/}}
+{{- if and .Values.socialRegistry.enabled .Values.socialRegistry.ingress.enabled .Values.socialRegistry.ingress.tls.enabled (not .Values.socialRegistry.ingress.tls.existingSecretName) }}
+{{- $host := .Values.socialRegistry.ingress.hostname }}
+{{- $secretName := printf "%s-tls" (include "social-registry.fullname" .) }}
+{{- $cert := genSelfSignedCert $host nil (list $host) 365 }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $secretName }}
+  labels:
+    {{- include "social-registry.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/resource-policy": keep
+type: kubernetes.io/tls
+data:
+  tls.crt: {{ $cert.Cert | b64enc }}
+  tls.key: {{ $cert.Key | b64enc }}
+{{- end }}

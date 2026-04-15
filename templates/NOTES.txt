@@ -12,8 +12,8 @@ Social Registry (Odoo / OpenG2P):
   Service: {{ include "social-registry.fullname" . }}:{{ .Values.socialRegistry.service.port }}
   {{- end }}
 
-  Configured modules ({{ len .Values.socialRegistry.odoo.modules }}):
-  {{- range .Values.socialRegistry.odoo.modules }}
+  Configured modules ({{ .Values.socialRegistry.odoo.modules | default list | len }}):
+  {{- range (.Values.socialRegistry.odoo.modules | default list) }}
     - {{ . }}
   {{- end }}
 
@@ -24,23 +24,6 @@ Social Registry (Odoo / OpenG2P):
   exist in the image.  Ensure your custom image includes all listed
   modules before enabling autoInstallModules.
 
-{{- end }}
-
-{{- if .Values.odkCentral.enabled }}
-
-ODK Central:
-  {{- if .Values.odkCentral.ingress.enabled }}
-  URL: {{ if .Values.odkCentral.ingress.tls.enabled }}https{{ else }}http{{ end }}://{{ .Values.odkCentral.ingress.hostname }}
-  {{- else }}
-  Service: {{ include "odk-central.frontendFullname" . }}:80
-  {{- end }}
-  Admin email: {{ .Values.odkCentral.admin.email }}
-
-  {{- if .Values.odkCentral.database.internal.enabled }}
-  Database: internal PostgreSQL (StatefulSet)
-  {{- else }}
-  Database: external ({{ .Values.odkCentral.database.external.host }}:{{ .Values.odkCentral.database.external.port }})
-  {{- end }}
 {{- end }}
 
 ==================================================================

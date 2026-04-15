@@ -1,0 +1,56 @@
+{{- if .Values.socialRegistry.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "social-registry.fullname" . }}-startup
+  labels:
+    {{- include "social-registry.labels" . | nindent 4 }}
+data:
+  10-db-ssl.sh: |
+    #!/bin/bash
+    set -o errexit
+    set -o nounset
+    set -o pipefail
+
+    conf_file="/opt/bitnami/odoo/conf/odoo.conf"
+    if [[ -n "${DB_SSLMODE:-}" ]]; then
+      if grep -Eq '^\s*;?\s*db_sslmode\s*=' "$conf_file"; then
+        sed -Ei "s|^\s*;?\s*db_sslmode\s*=.*|db_sslmode = ${DB_SSLMODE}|" "$conf_file"
+      else
+        printf '\ndb_sslmode = %s\n' "$DB_SSLMODE" >> "$conf_file"
+      fi
+    fi
+  {{- if .Values.socialRegistry.externalKeycloak.issuerUrl }}
+  20-keycloak-oidc.sh: |
+    #!/bin/bash
+    set -o nounset
+    set -o pipefail
+    echo "Keycloak OIDC: scheduling post-bootstrap auto-configuration..."
+    # Run in background — the auth_oauth_provider table only exists after
+    # Odoo bootstrap completes, so we poll until it appears.
+    (
+      export PGPASSWORD="${ODOO_DATABASE_PASSWORD}"
+      PSQL_ARGS="-h ${ODOO_DATABASE_HOST} -p ${ODOO_DATABASE_PORT_NUMBER:-5432} -U ${ODOO_DATABASE_USER} -d ${ODOO_DATABASE_NAME}"
+      export PGSSLMODE="${DB_SSLMODE:-require}"
+      for i in $(seq 1 360); do
+        if psql $PSQL_ARGS -t -A -c "SELECT 1 FROM auth_oauth_provider LIMIT 1;" >/dev/null 2>&1; then
+          echo "Keycloak OIDC: auth_oauth_provider table ready, running configuration..."
+          python3 /opt/bitnami/odoo/patches/configure-keycloak-oidc.py
+          # Set web.base.url so Odoo generates correct redirect URIs behind reverse proxy
+          if [[ -n "${WEB_BASE_URL:-}" ]]; then
+            psql $PSQL_ARGS -c "INSERT INTO ir_config_parameter (key, value, create_uid, write_uid, create_date, write_date) VALUES ('web.base.url', '${WEB_BASE_URL}', 1, 1, NOW(), NOW()) ON CONFLICT (key) DO UPDATE SET value = '${WEB_BASE_URL}', write_date = NOW();" 2>/dev/null \
+              && echo "Post-bootstrap: set web.base.url to ${WEB_BASE_URL}" \
+              || echo "Post-bootstrap: WARNING — failed to set web.base.url"
+          fi
+          # Hide default Odoo apps from the Apps screen — keep only g2p_* and mts_*
+          psql $PSQL_ARGS -c "UPDATE ir_module_module SET application = false WHERE application = true AND name NOT LIKE 'g2p_%' AND name NOT LIKE 'mts_%';" 2>/dev/null \
+            && echo "Post-bootstrap: hid default Odoo apps from Apps screen." \
+            || echo "Post-bootstrap: WARNING — failed to hide default Odoo apps."
+          exit 0
+        fi
+        sleep 10
+      done
+      echo "Keycloak OIDC: timed out waiting for auth_oauth_provider table (1 hour)."
+    ) &
+  {{- end }}
+{{- end }}

@@ -21,3 +21,11 @@
 .idea/
 *.tmproj
 .vscode/
+# Symlinked addons repo
+custom-addons
+# Docker / build artifacts
+Dockerfile*
+patches/
+# Non-chart operational directories
+social-registry/
+wso2-apim/

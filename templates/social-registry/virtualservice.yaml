@@ -1,0 +1,23 @@
+{{- if and .Values.socialRegistry.enabled .Values.socialRegistry.istio.enabled }}
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: {{ include "social-registry.fullname" . }}-vs
+  labels:
+    {{- include "social-registry.labels" . | nindent 4 }}
+spec:
+  gateways:
+    - {{ .Values.socialRegistry.istio.gateway }}
+  hosts:
+    - {{ .Values.socialRegistry.istio.host | quote }}
+  http:
+    - headers:
+        request:
+          set:
+            x-forwarded-proto: https
+      route:
+        - destination:
+            host: {{ include "social-registry.fullname" . }}
+            port:
+              number: {{ .Values.socialRegistry.service.port | default 80 }}
+{{- end }}
