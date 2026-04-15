@@ -73,7 +73,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.socialRegistry.externalPostgresql.existingSecret }}
-                  key: {{ .Values.socialRegistry.externalPostgresql.secretKeys.password }}
+                  key: {{ (.Values.socialRegistry.externalPostgresql.secretKeys).password | default "password" }}
             {{- end }}
             {{- /* Odoo admin password */}}
             {{- if .Values.socialRegistry.odoo.adminPasswordExistingSecret }}
@@ -89,7 +89,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.socialRegistry.externalKeycloak.existingSecret }}
-                  key: {{ .Values.socialRegistry.externalKeycloak.secretKeys.clientSecret }}
+                  key: {{ (.Values.socialRegistry.externalKeycloak.secretKeys).clientSecret | default "client-secret" }}
             {{- end }}
             {{- /* MinIO credentials */}}
             {{- if .Values.socialRegistry.externalMinio.existingSecret }}
@@ -97,12 +97,12 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.socialRegistry.externalMinio.existingSecret }}
-                  key: {{ .Values.socialRegistry.externalMinio.secretKeys.accessKey }}
+                  key: {{ (.Values.socialRegistry.externalMinio.secretKeys).accessKey | default "access-key" }}
             - name: MINIO_SECRET_KEY
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.socialRegistry.externalMinio.existingSecret }}
-                  key: {{ .Values.socialRegistry.externalMinio.secretKeys.secretKey }}
+                  key: {{ (.Values.socialRegistry.externalMinio.secretKeys).secretKey | default "secret-key" }}
             {{- end }}
             {{- /* ODK integration token */}}
             {{- if and .Values.socialRegistry.odkIntegration.enabled .Values.socialRegistry.odkIntegration.existingSecret }}
@@ -110,7 +110,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.socialRegistry.odkIntegration.existingSecret }}
-                  key: {{ .Values.socialRegistry.odkIntegration.secretKeys.apiToken }}
+                  key: {{ (.Values.socialRegistry.odkIntegration.secretKeys).apiToken | default "api-token" }}
             {{- end }}
             {{- /* Extra Odoo CLI args */}}
             {{- if .Values.socialRegistry.odoo.extraArgs }}

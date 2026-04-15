@@ -270,7 +270,7 @@ Determine the ODK Central database password secret key.
 {{- if .Values.odkCentral.database.internal.enabled }}
 {{- "postgres-password" }}
 {{- else }}
-{{- .Values.odkCentral.database.external.secretKeys.password | default "password" }}
+{{- (.Values.odkCentral.database.external.secretKeys).password | default "password" }}
 {{- end }}
 {{- end }}
 
