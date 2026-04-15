@@ -248,7 +248,7 @@ odkCentral:
 
   ## -- Image
   image:
-    repository: ghcr.io/getodk/central-backend
+    repository: openg2p/odk-central-backend
     tag: v2025.2.1
     pullPolicy: IfNotPresent
   imagePullSecrets: []
@@ -363,8 +363,8 @@ odkCentral:
   enketo:
     enabled: true
     image:
-      repository: ghcr.io/getodk/central-enketo
-      tag: v2025.2.1
+      repository: ghcr.io/enketo/enketo
+      tag: "7.5.1"
       pullPolicy: IfNotPresent
     replicas: 1
     apiKey: ""
@@ -383,7 +383,7 @@ odkCentral:
     enabled: true
     image:
       repository: ghcr.io/getodk/pyxform-http
-      tag: v2025.2.1
+      tag: v3.1.0
       pullPolicy: IfNotPresent
     replicas: 1
     resources:

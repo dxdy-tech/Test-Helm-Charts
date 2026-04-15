@@ -1,4 +1,4 @@
-{{- if and .Values.odkCentral.enabled .Values.odkCentral.persistence.enabled (not .Values.odkCentral.persistence.existingClaim) }}
+{{- if and .Values.odkCentral.enabled ((.Values.odkCentral.persistence).enabled) (not ((.Values.odkCentral.persistence).existingClaim)) }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -7,11 +7,11 @@ metadata:
     {{- include "odk-central.labels" . | nindent 4 }}
 spec:
   accessModes:
-    {{- toYaml .Values.odkCentral.persistence.accessModes | nindent 4 }}
+    {{- toYaml (.Values.odkCentral.persistence.accessModes | default (list "ReadWriteOnce")) | nindent 4 }}
   {{- if .Values.odkCentral.persistence.storageClass }}
   storageClassName: {{ .Values.odkCentral.persistence.storageClass | quote }}
   {{- end }}
   resources:
     requests:
-      storage: {{ .Values.odkCentral.persistence.size }}
+      storage: {{ .Values.odkCentral.persistence.size | default "20Gi" }}
 {{- end }}

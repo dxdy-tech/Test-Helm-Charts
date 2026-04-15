@@ -92,6 +92,12 @@ socialRegistry:
       cpu: 1
       memory: 8Gi
 
+  ## -- Persistence
+  persistence:
+    enabled: true
+    storageClass: nfs-client
+    size: 10Gi
+
   ## -- Horizontal Pod Autoscaler
   autoscaling:
     enabled: true
@@ -126,7 +132,7 @@ odkCentral:
 
   ## -- Images
   image:
-    repository: ghcr.io/getodk/central-backend
+    repository: openg2p/odk-central-backend
     tag: v2025.2.1
     pullPolicy: IfNotPresent
 
@@ -164,6 +170,12 @@ odkCentral:
       database: odk
       username: odk_user
       existingSecret: openg2p-odk-db-qa
+
+  ## -- Persistence
+  persistence:
+    enabled: true
+    storageClass: nfs-client
+    size: 20Gi
 
   ## -- Resource requests and limits (backend)
   resources:

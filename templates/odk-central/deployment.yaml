@@ -60,7 +60,7 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           command: ["bash"]
-          args: ["-c", "chmod +x /usr/share/odk/start-odk.sh && /usr/share/odk/start-odk.sh"]
+          args: ["-c", "/usr/share/odk/start-odk.sh"]
           ports:
             - name: http
               containerPort: 8383
@@ -147,7 +147,7 @@ spec:
             - name: config-template
               mountPath: /usr/share/odk/start-odk.sh
               subPath: start-odk.sh
-            {{- if .Values.odkCentral.persistence.enabled }}
+            {{- if (.Values.odkCentral.persistence).enabled }}
             - name: data
               mountPath: /data
             {{- end }}
@@ -159,7 +159,7 @@ spec:
           configMap:
             name: {{ include "odk-central.fullname" . }}-config
             defaultMode: 0755
-        {{- if .Values.odkCentral.persistence.enabled }}
+        {{- if (.Values.odkCentral.persistence).enabled }}
         - name: data
           persistentVolumeClaim:
             claimName: {{ include "odk-central.pvcName" . }}
@@ -212,7 +212,7 @@ spec:
           image: "{{ .Values.odkCentral.frontend.image.repository }}:{{ .Values.odkCentral.frontend.image.tag }}"
           imagePullPolicy: {{ .Values.odkCentral.frontend.image.pullPolicy }}
           command: ["bash"]
-          args: ["-c", "chmod +x /usr/share/odk/nginx/setup-odk.sh && /usr/share/odk/nginx/setup-odk.sh"]
+          args: ["-c", "/usr/share/odk/nginx/setup-odk.sh"]
           ports:
             - name: http
               containerPort: {{ .Values.odkCentral.frontend.containerPort | default 80 }}

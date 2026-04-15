@@ -1,4 +1,4 @@
-{{- if and .Values.socialRegistry.enabled .Values.socialRegistry.persistence.enabled (not .Values.socialRegistry.persistence.existingClaim) }}
+{{- if and .Values.socialRegistry.enabled ((.Values.socialRegistry.persistence).enabled) (not ((.Values.socialRegistry.persistence).existingClaim)) }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -7,11 +7,11 @@ metadata:
     {{- include "social-registry.labels" . | nindent 4 }}
 spec:
   accessModes:
-    {{- toYaml .Values.socialRegistry.persistence.accessModes | nindent 4 }}
+    {{- toYaml (.Values.socialRegistry.persistence.accessModes | default (list "ReadWriteMany")) | nindent 4 }}
   {{- if .Values.socialRegistry.persistence.storageClass }}
   storageClassName: {{ .Values.socialRegistry.persistence.storageClass | quote }}
   {{- end }}
   resources:
     requests:
-      storage: {{ .Values.socialRegistry.persistence.size }}
+      storage: {{ .Values.socialRegistry.persistence.size | default "10Gi" }}
 {{- end }}
