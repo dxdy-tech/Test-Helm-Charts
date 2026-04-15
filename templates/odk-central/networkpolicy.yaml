@@ -38,6 +38,16 @@ spec:
           port: 53
         - protocol: TCP
           port: 53
+    ## Istio control plane (istiod)
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: istio-system
+      ports:
+        - protocol: TCP
+          port: 15012
+        - protocol: TCP
+          port: 15010
     ## PostgreSQL
     - to:
         - ipBlock:
@@ -82,6 +92,16 @@ spec:
           port: 53
         - protocol: TCP
           port: 53
+    ## Istio control plane (istiod)
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: istio-system
+      ports:
+        - protocol: TCP
+          port: 15012
+        - protocol: TCP
+          port: 15010
     ## To backend and enketo within namespace
     - to:
         - podSelector: {}

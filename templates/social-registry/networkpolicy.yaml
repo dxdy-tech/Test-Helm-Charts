@@ -37,6 +37,16 @@ spec:
           port: 53
         - protocol: TCP
           port: 53
+    ## Istio control plane (istiod)
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: istio-system
+      ports:
+        - protocol: TCP
+          port: 15012
+        - protocol: TCP
+          port: 15010
     ## Allow all TCP egress (PostgreSQL, Keycloak, MinIO, ODK, etc.)
     - to:
         - ipBlock:
