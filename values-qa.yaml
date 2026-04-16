@@ -33,7 +33,7 @@ socialRegistry:
 
   ## -- External PostgreSQL (no in-cluster PG for Social Registry)
   externalPostgresql:
-    host: postgres-svc.farmer-registry-qa.svc.cluster.local
+    host: 172.30.244.47
     port: 5432
     database: social_registry
     username: social_registry_user
@@ -50,7 +50,7 @@ socialRegistry:
 
   ## -- External MinIO / S3
   externalMinio:
-    endpoint: minio-svc.farmer-registry-qa.svc.cluster.local:9000
+    endpoint: 172.30.238.56:9000
     bucket: social-registry
     secure: true
     existingSecret: openg2p-social-registry-minio-qa
@@ -169,7 +169,7 @@ odkCentral:
     internal:
       enabled: false
     external:
-      host: postgres-svc.farmer-registry-qa.svc.cluster.local
+      host: 172.30.244.47
       port: 5432
       database: odk
       username: odk_user

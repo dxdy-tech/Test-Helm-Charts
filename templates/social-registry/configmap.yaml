@@ -19,6 +19,7 @@ data:
   DB_SSLMODE: {{ .Values.socialRegistry.externalPostgresql.sslmode | quote }}
   ALLOW_EMPTY_PASSWORD: "no"
   ODOO_EMAIL: {{ .Values.socialRegistry.odoo.email | default "admin@example.com" | quote }}
+  EXTRA_ADDONS_URLS_TO_PULL: ""
   {{- if .Values.socialRegistry.odoo.modules }}
   ODOO_MODULES: {{ include "social-registry.moduleList" . | quote }}
   {{- end }}
