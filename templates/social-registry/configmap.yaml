@@ -11,6 +11,7 @@ data:
   WORKERS: {{ .Values.socialRegistry.odoo.workers | quote }}
   MAX_CRON_THREADS: {{ .Values.socialRegistry.odoo.maxCronThreads | quote }}
   DBFILTER: {{ .Values.socialRegistry.odoo.dbfilter | quote }}
+  ODOO_DATABASE_FILTER: {{ .Values.socialRegistry.odoo.dbfilter | quote }}
   SERVER_WIDE_MODULES: {{ .Values.socialRegistry.odoo.serverWideModules | quote }}
   ODOO_DATABASE_HOST: {{ .Values.socialRegistry.externalPostgresql.host | quote }}
   ODOO_DATABASE_PORT_NUMBER: {{ .Values.socialRegistry.externalPostgresql.port | quote }}
