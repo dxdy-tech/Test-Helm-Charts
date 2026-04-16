@@ -21,6 +21,12 @@ data:
   ALLOW_EMPTY_PASSWORD: "no"
   ODOO_EMAIL: {{ .Values.socialRegistry.odoo.email | default "admin@example.com" | quote }}
   EXTRA_ADDONS_URLS_TO_PULL: ""
+  ## OpenG2P post-init-openg2p.sh compatibility vars
+  LIMIT_TIME_REAL: {{ .Values.socialRegistry.odoo.limitTimeReal | default "150" | quote }}
+  LOG_DB: {{ .Values.socialRegistry.odoo.logDb | default "False" | quote }}
+  LOG_HANDLER: {{ .Values.socialRegistry.odoo.logHandler | default "':INFO'" | quote }}
+  OPENG2P_SMTP_HOST: {{ .Values.socialRegistry.odoo.smtpHost | default "" | quote }}
+  OPENG2P_SMTP_PORT: {{ .Values.socialRegistry.odoo.smtpPort | default "" | quote }}
   {{- if .Values.socialRegistry.odoo.modules }}
   ODOO_MODULES: {{ include "social-registry.moduleList" . | quote }}
   {{- end }}
