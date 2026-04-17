@@ -15,7 +15,7 @@ socialRegistry:
   ## modules listed under socialRegistry.odoo.modules.
   image:
     repository: vsoneworld/openg2pdad
-    tag: "0.0.1"
+    tag: 0.0.2
     pullPolicy: IfNotPresent
   imagePullSecrets:
     - name: vsow-dockerhub

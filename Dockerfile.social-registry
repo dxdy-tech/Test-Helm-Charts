@@ -38,6 +38,17 @@ RUN sed -i \
     /opt/bitnami/scripts/libodoo.sh
 
 # ---------------------------------------------------------------------------
+# 3. Patch libodoo.sh: auto-detect an already-bootstrapped external database.
+#    When the PVC is recreated but the external DB retains modules (e.g. RDS
+#    surviving a Helm chart reinstall), the Bitnami init marker is lost and
+#    bootstrap re-runs --init, causing data conflicts.  This patch queries
+#    the DB for the ir_module_module table and auto-enables skip-bootstrap
+#    mode when it already exists.
+# ---------------------------------------------------------------------------
+COPY patches/detect-existing-db.py /tmp/detect-existing-db.py
+RUN python3 /tmp/detect-existing-db.py && rm /tmp/detect-existing-db.py
+
+# ---------------------------------------------------------------------------
 # (Optional) Layer DAD-specific addons on top of the base image.
 # Uncomment and adapt when this repo ships addon source under ./addons/.
 # ---------------------------------------------------------------------------
