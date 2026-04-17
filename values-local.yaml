@@ -1,11 +1,11 @@
-## ---------------------------------------------------------------------------
-## values-qa.yaml — QA environment overrides
-## Usage: helm install dad-farmer-registry . -f values.yaml -f values-qa.yaml
-## ---------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
+## values-local.yaml — Local environment overrides
+## Usage: helm install dad-farmer-registry . -f values.yaml -f values-local.yaml
+## -----------------------------------------------------------------------------
 
-## ---------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 ## Social Registry (Odoo 17 / OpenG2P)
-## ---------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 socialRegistry:
   enabled: true
   replicaCount: 1
@@ -14,9 +14,11 @@ socialRegistry:
   ## The operator is responsible for building an image that includes all
   ## modules listed under socialRegistry.odoo.modules.
   image:
-    repository: openg2p/openg2p-social-registry-core
-    tag: "1.5.7"
+    repository: vsoneworld/openg2pdad
+    tag: "0.0.1"
     pullPolicy: IfNotPresent
+  imagePullSecrets:
+    - name: vsow-dockerhub
 
   ## -- Ingress (Kubernetes-native, not OpenShift Route)
   ingress:
@@ -66,7 +68,7 @@ socialRegistry:
   ## -- Odoo runtime configuration
   odoo:
     ## Odoo admin email (used by Bitnami entrypoint for ODOO_EMAIL)
-    email: "devops@global.vsoneworld.com"
+    email: devops@global.vsoneworld.com
     ## Existing secret holding the Odoo master admin password
     adminPasswordExistingSecret: openg2p-social-registry-admin-qa
     adminPasswordSecretKey: password
@@ -79,25 +81,51 @@ socialRegistry:
     proxyMode: true
     ## Modules to expose
     modules:
-      - g2p_agent_portal_base
+      - g2p_registry_base
+      - g2p_encryption
+      - g2p_documents
+      - g2p_auth_oidc
+      - g2p_change_log
+      - g2p_registry
+      - g2p_superset_dashboard
+      - g2p_social_registry_theme
       - g2p_registry_individual
       - g2p_registry_group
-      - g2p_registry_membership
-      - g2p_registry_dashboard
-      - g2p_registry_theme
+      - g2p_agent_portal_base
       - g2p_odk_importer
+      - g2p_mts
+      - g2p_portal_auth
+      - g2p_document_field
+      - g2p_encryption_keymanager
+      - g2p_encryption_rest_api
       - g2p_registry_rest_api
-      - g2p_registry_deduplication_deduplicator
-      - g2p_registration_portal_base
-      - g2p_odk_user_mapping
+      - g2p_leaflet_map
+      - g2p_registry_membership
+      - g2p_registry_documents
+      - g2p_registry_document_encryption
+      - g2p_registry_encryption
+      - g2p_auth_id_oidc
+      - g2p_bank
+      - g2p_document_encryption
+      - g2p_enumerator
+      - g2p_openid_vci
+      - g2p_registry_addl_info
+      - g2p_registry_g2p_connect_rest_api
+      - g2p_registry_id_deduplication
+      - g2p_social_registry
+
+  ## -- Enable verbose Odoo/Bitnami bootstrap logging
+  extraEnv:
+    - name: BITNAMI_DEBUG
+      value: "true"
 
   ## -- Resource requests and limits
   resources:
     requests:
-      cpu: 250m
-      memory: 2Gi
+      cpu: 2
+      memory: 4Gi
     limits:
-      cpu: 1
+      cpu: 2
       memory: 8Gi
 
   ## -- Persistence
@@ -142,11 +170,11 @@ socialRegistry:
   #             - key: node-role.kubernetes.io/control-plane
   #               operator: DoesNotExist
 
-## ---------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 ## ODK Central
-## ---------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 odkCentral:
-  enabled: true
+  enabled: false
   replicaCount: 1
 
   ## -- Images
@@ -174,7 +202,7 @@ odkCentral:
 
   ## -- Admin account
   admin:
-    email: Chamath.Ellawala@global.vsoneworld.com
+    email: devops@global.vsoneworld.com
     passwordExistingSecret: openg2p-odk-admin-qa
     passwordSecretKey: password
 

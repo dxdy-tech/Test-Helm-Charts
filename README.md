@@ -337,17 +337,38 @@ For the current `openg2p/openg2p-social-registry-core` image, startup behavior i
 socialRegistry:
   odoo:
     modules:
-      - g2p_agent_portal_base
+      - g2p_registry_base
+      - g2p_encryption
+      - g2p_documents
+      - g2p_auth_oidc
+      - g2p_change_log
+      - g2p_registry
+      - g2p_superset_dashboard
+      - g2p_social_registry_theme
       - g2p_registry_individual
       - g2p_registry_group
-      - g2p_registry_membership
-      - g2p_registry_dashboard
-      - g2p_registry_theme
+      - g2p_agent_portal_base
       - g2p_odk_importer
+      - g2p_mts
+      - g2p_portal_auth
+      - g2p_document_field
+      - g2p_encryption_keymanager
+      - g2p_encryption_rest_api
       - g2p_registry_rest_api
-      - g2p_registry_deduplication_deduplicator
-      - g2p_registration_portal_base
-      - g2p_odk_user_mapping
+      - g2p_leaflet_map
+      - g2p_registry_membership
+      - g2p_registry_documents
+      - g2p_registry_document_encryption
+      - g2p_registry_encryption
+      - g2p_auth_id_oidc
+      - g2p_bank
+      - g2p_document_encryption
+      - g2p_enumerator
+      - g2p_openid_vci
+      - g2p_registry_addl_info
+      - g2p_registry_g2p_connect_rest_api
+      - g2p_registry_id_deduplication
+      - g2p_social_registry
 ```
 
 ### Safe startup behavior
