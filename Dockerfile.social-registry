@@ -49,6 +49,20 @@ COPY patches/detect-existing-db.py /tmp/detect-existing-db.py
 RUN python3 /tmp/detect-existing-db.py && rm /tmp/detect-existing-db.py
 
 # ---------------------------------------------------------------------------
+# 4. Fix upstream bug: g2p_documents/preview_document.js does not export the
+#    G2PDocumentPreview class, causing g2p_document_encryption to fail with
+#    "Widgetpreview is undefined".  Add the missing export and rename import.
+#    Fixed upstream in https://github.com/OpenG2P/openg2p-registry/pull/288
+#    but not included in base image 1.5.7.
+# ---------------------------------------------------------------------------
+RUN sed -i \
+    's|^class G2PDocumentPreview|export class Widgetpreview|' \
+    /opt/bitnami/odoo/extraaddons/openg2p-registry/g2p_documents/static/src/js/preview_document.js && \
+    sed -i \
+    's|G2PDocumentPreview\.template|Widgetpreview.template|; s|component: G2PDocumentPreview|component: Widgetpreview|' \
+    /opt/bitnami/odoo/extraaddons/openg2p-registry/g2p_documents/static/src/js/preview_document.js
+
+# ---------------------------------------------------------------------------
 # (Optional) Layer DAD-specific addons on top of the base image.
 # Uncomment and adapt when this repo ships addon source under ./addons/.
 # ---------------------------------------------------------------------------

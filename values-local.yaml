@@ -15,7 +15,7 @@ socialRegistry:
   ## modules listed under socialRegistry.odoo.modules.
   image:
     repository: vsoneworld/openg2pdad
-    tag: 0.0.2
+    tag: 0.0.3
     pullPolicy: IfNotPresent
   imagePullSecrets:
     - name: vsow-dockerhub
@@ -79,6 +79,8 @@ socialRegistry:
     maxCronThreads: 2
     ## Proxy mode (set True when behind a reverse proxy / ingress)
     proxyMode: true
+    ## Skip module update on restarts (except first run when persistence is empty)
+    skipModulesUpdate: true
     ## Modules to expose
     modules:
       - g2p_registry_base
@@ -142,7 +144,7 @@ socialRegistry:
     initialDelaySeconds: 10
     periodSeconds: 10
     timeoutSeconds: 5
-    failureThreshold: 120
+    failureThreshold: 360
     successThreshold: 1
 
   ## -- Horizontal Pod Autoscaler

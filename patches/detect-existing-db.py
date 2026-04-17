@@ -23,6 +23,8 @@ INJECT = """\
         _tbl_check="$(postgresql_remote_execute_print_output "${db_execute_args[@]}" <<< "SELECT 1 FROM information_schema.tables WHERE table_name='ir_module_module' LIMIT 1;" 2>/dev/null || true)"
         if [[ "$_tbl_check" == *"1"* ]]; then
             info "Database already bootstrapped - switching to skip-bootstrap mode"
+            info "Clearing stale asset bundles from the database"
+            postgresql_remote_execute "${db_execute_args[@]}" <<< "DELETE FROM ir_attachment WHERE url LIKE '/web/assets/%' OR url LIKE '/web/content/%';"
             ODOO_SKIP_BOOTSTRAP=true
             ODOO_SKIP_MODULES_UPDATE=true
         fi
