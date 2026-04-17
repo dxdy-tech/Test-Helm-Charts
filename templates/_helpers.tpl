@@ -182,6 +182,13 @@ ODK Central Enketo fullname
 {{- end }}
 
 {{/*
+ODK Central Enketo Redis fullname
+*/}}
+{{- define "odk-central.enketoRedisFullname" -}}
+{{- printf "%s-enketo-redis" (include "odk-central.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
 ODK Central Pyxform fullname
 */}}
 {{- define "odk-central.pyxformFullname" -}}
@@ -275,6 +282,30 @@ Determine the ODK Central database password secret key.
 {{- end }}
 
 {{/*
+Determine the ODK Central database SSL value as a JSON literal.
+*/}}
+{{- define "odk-central.dbSslJson" -}}
+{{- $dbSsl := ((.Values.odkCentral.database).external).ssl -}}
+{{- $dbSslString := lower (toString $dbSsl) -}}
+{{- if or (not $dbSsl) (eq $dbSslString "null") (eq $dbSslString "false") }}
+{{- "null" }}
+{{- else }}
+{{- "true" }}
+{{- end }}
+{{- end }}
+
+{{/*
+Determine the public scheme for ODK Central based on ingress TLS.
+*/}}
+{{- define "odk-central.publicScheme" -}}
+{{- if ((.Values.odkCentral.ingress).tls).enabled -}}
+{{- "https" -}}
+{{- else -}}
+{{- "http" -}}
+{{- end -}}
+{{- end }}
+
+{{/*
 ODK Central Enketo secret name (for the API key).
 */}}
 {{- define "odk-central.enketoSecretName" -}}
@@ -282,5 +313,49 @@ ODK Central Enketo secret name (for the API key).
 {{- .Values.odkCentral.enketo.existingSecret }}
 {{- else }}
 {{- include "odk-central.enketoFullname" . }}
+{{- end }}
+{{- end }}
+
+{{/*
+ODK Central Enketo Redis host.
+*/}}
+{{- define "odk-central.enketoRedisHost" -}}
+{{- if .Values.odkCentral.enketo.redis.enabled }}
+{{- include "odk-central.enketoRedisFullname" . }}
+{{- else }}
+{{- .Values.odkCentral.enketo.redis.host }}
+{{- end }}
+{{- end }}
+
+{{/*
+ODK Central Enketo Redis port.
+*/}}
+{{- define "odk-central.enketoRedisPort" -}}
+{{- if .Values.odkCentral.enketo.redis.enabled }}
+{{- .Values.odkCentral.enketo.redis.service.port | default 6379 | toString }}
+{{- else }}
+{{- .Values.odkCentral.enketo.redis.port | default 6379 | toString }}
+{{- end }}
+{{- end }}
+
+{{/*
+ODK Central Enketo Redis cache host.
+*/}}
+{{- define "odk-central.enketoRedisCacheHost" -}}
+{{- if .Values.odkCentral.enketo.redis.cacheHost }}
+{{- .Values.odkCentral.enketo.redis.cacheHost }}
+{{- else }}
+{{- include "odk-central.enketoRedisHost" . }}
+{{- end }}
+{{- end }}
+
+{{/*
+ODK Central Enketo Redis cache port.
+*/}}
+{{- define "odk-central.enketoRedisCachePort" -}}
+{{- if .Values.odkCentral.enketo.redis.cachePort }}
+{{- .Values.odkCentral.enketo.redis.cachePort | toString }}
+{{- else }}
+{{- include "odk-central.enketoRedisPort" . }}
 {{- end }}
 {{- end }}

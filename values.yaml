@@ -36,14 +36,9 @@ socialRegistry:
   ## -- Security contexts
   podSecurityContext:
     fsGroup: 1000
-  containerSecurityContext:
-    runAsNonRoot: true
-    runAsUser: 1000
-    allowPrivilegeEscalation: false
-    readOnlyRootFilesystem: false
-    capabilities:
-      drop:
-        - ALL
+  ## The OpenG2P Odoo image starts as root to perform first-run setup and then
+  ## drops privileges internally. Do not force a non-root UID here.
+  containerSecurityContext: {}
 
   ## -- Kubernetes Service
   service:
@@ -70,8 +65,8 @@ socialRegistry:
     accessModes:
       - ReadWriteMany
     size: 10Gi
-    ## Mount path inside the Odoo container for filestore
-    mountPath: /var/lib/odoo/filestore
+    ## Mount path expected by the Bitnami/OpenG2P image for persisted app data.
+    mountPath: /bitnami/odoo
 
   ## -- External PostgreSQL (no in-cluster PG for Social Registry)
   externalPostgresql:
@@ -119,6 +114,10 @@ socialRegistry:
     proxyMode: true
     ## Whether to list databases on the login screen
     listDb: false
+    ## Skip first-run bootstrap when reusing an existing Odoo database.
+    skipBootstrap: false
+    ## Skip module update during startup when the database is already managed.
+    skipModulesUpdate: false
     ## Number of Odoo worker processes
     workers: 4
     ## Maximum cron thread count
@@ -133,12 +132,6 @@ socialRegistry:
     adminPasswordExistingSecret: ""
     adminPasswordSecretKey: "admin-password"
 
-    ## -- Module installation behavior
-    ## When autoInstallModules is false (default), the module list is passed
-    ## into the ODOO_MODULES env var but Odoo will NOT force-install them on
-    ## startup.  The operator must trigger installation manually or set this
-    ## to true after verifying the image contains all listed modules.
-    autoInstallModules: false
 
     ## -- Configurable module list
     ## These names are passed as-is into runtime configuration.  Helm does
@@ -370,6 +363,25 @@ odkCentral:
     apiKey: ""
     existingSecret: ""
     secretKey: enketo-api-key
+    redis:
+      enabled: true
+      host: ""
+      port: 6379
+      cacheHost: ""
+      cachePort: ""
+      image:
+        repository: redis
+        tag: "7.4-alpine"
+        pullPolicy: IfNotPresent
+      service:
+        port: 6379
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 250m
+          memory: 256Mi
     resources:
       requests:
         cpu: 100m

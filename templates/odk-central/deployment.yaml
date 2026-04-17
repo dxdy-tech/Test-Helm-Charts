@@ -86,7 +86,7 @@ spec:
             - name: DB_USER
               value: {{ include "odk-central.dbUser" . | quote }}
             - name: DB_SSL
-              value: {{ ((.Values.odkCentral.database).external).ssl | default "null" | quote }}
+              value: {{ include "odk-central.dbSslJson" . | quote }}
             {{- if or (((.Values.odkCentral.database).internal).enabled) (((.Values.odkCentral.database).external).existingSecret) }}
             - name: DB_PASSWORD
               valueFrom:
@@ -143,6 +143,8 @@ spec:
             - name: config-template
               mountPath: /usr/share/odk/start-odk.sh
               subPath: start-odk.sh
+            - name: runtime-config
+              mountPath: /usr/odk/config
             {{- if (.Values.odkCentral.persistence).enabled }}
             - name: data
               mountPath: /data
@@ -155,6 +157,8 @@ spec:
           configMap:
             name: {{ include "odk-central.fullname" . }}-config
             defaultMode: 0755
+        - name: runtime-config
+          emptyDir: {}
         {{- if (.Values.odkCentral.persistence).enabled }}
         - name: data
           persistentVolumeClaim:

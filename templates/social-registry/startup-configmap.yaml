@@ -1,0 +1,23 @@
+{{- if .Values.socialRegistry.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "social-registry.fullname" . }}-startup
+  labels:
+    {{- include "social-registry.labels" . | nindent 4 }}
+data:
+  10-db-ssl.sh: |
+    #!/bin/bash
+    set -o errexit
+    set -o nounset
+    set -o pipefail
+
+    conf_file="/opt/bitnami/odoo/conf/odoo.conf"
+    if [[ -n "${DB_SSLMODE:-}" ]]; then
+      if grep -Eq '^\s*;?\s*db_sslmode\s*=' "$conf_file"; then
+        sed -Ei "s|^\s*;?\s*db_sslmode\s*=.*|db_sslmode = ${DB_SSLMODE}|" "$conf_file"
+      else
+        printf '\ndb_sslmode = %s\n' "$DB_SSLMODE" >> "$conf_file"
+      fi
+    fi
+{{- end }}

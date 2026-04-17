@@ -34,8 +34,17 @@ data:
           "url": "http://${ENKETO_HOST}:${ENKETO_PORT}/-",
           "apiKey": "${ENKETO_API_KEY}"
         },
+        "server": {
+          "port": 8383
+        },
+        "external": {
+          "sentry": {},
+          "analytics": {},
+          "mailingListOptIn": {},
+          "s3blobStore": {}
+        },
         "env": {
-          "domain": "https://${DOMAIN}",
+          "domain": "{{ include "odk-central.publicScheme" . }}://${DOMAIN}",
           "sysadminAccount": "${SYSADMIN_EMAIL}"
         }
       }
@@ -78,7 +87,7 @@ data:
       }
 
       location ~ ^/v\d {
-        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-Proto {{ include "odk-central.publicScheme" . }};
         proxy_pass http://${BACKEND_URL};
         proxy_redirect off;
         proxy_request_buffering on;

@@ -1,0 +1,62 @@
+{{- if and .Values.odkCentral.enabled (default true .Values.odkCentral.enketo.enabled) .Values.odkCentral.enketo.redis.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "odk-central.enketoRedisFullname" . }}
+  labels:
+    {{- include "odk-central.labels" . | nindent 4 }}
+    app.kubernetes.io/component: enketo-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "odk-central.enketoRedisFullname" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "odk-central.enketoRedisFullname" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: enketo-redis
+    spec:
+      containers:
+        - name: redis
+          image: "{{ .Values.odkCentral.enketo.redis.image.repository }}:{{ .Values.odkCentral.enketo.redis.image.tag }}"
+          imagePullPolicy: {{ .Values.odkCentral.enketo.redis.image.pullPolicy }}
+          ports:
+            - name: redis
+              containerPort: {{ .Values.odkCentral.enketo.redis.service.port }}
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: redis
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            tcpSocket:
+              port: redis
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          {{- with .Values.odkCentral.enketo.redis.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "odk-central.enketoRedisFullname" . }}
+  labels:
+    {{- include "odk-central.labels" . | nindent 4 }}
+    app.kubernetes.io/component: enketo-redis
+spec:
+  type: ClusterIP
+  ports:
+    - name: redis
+      port: {{ .Values.odkCentral.enketo.redis.service.port }}
+      targetPort: redis
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: {{ include "odk-central.enketoRedisFullname" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}

@@ -40,19 +40,28 @@ spec:
         - name: enketo
           image: "{{ (.Values.odkCentral.enketo.image).repository | default "ghcr.io/enketo/enketo" }}:{{ (.Values.odkCentral.enketo.image).tag | default "7.5.1" }}"
           imagePullPolicy: {{ (.Values.odkCentral.enketo.image).pullPolicy | default "IfNotPresent" }}
+          env:
+            - name: ENKETO_REDIS_MAIN_HOST
+              value: {{ include "odk-central.enketoRedisHost" . | quote }}
+            - name: ENKETO_REDIS_MAIN_PORT
+              value: {{ include "odk-central.enketoRedisPort" . | quote }}
+            - name: ENKETO_REDIS_CACHE_HOST
+              value: {{ include "odk-central.enketoRedisCacheHost" . | quote }}
+            - name: ENKETO_REDIS_CACHE_PORT
+              value: {{ include "odk-central.enketoRedisCachePort" . | quote }}
           ports:
             - name: http
               containerPort: 8005
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: /
+              path: /health
               port: http
             initialDelaySeconds: 20
             periodSeconds: 30
           readinessProbe:
             httpGet:
-              path: /
+              path: /health
               port: http
             initialDelaySeconds: 5
             periodSeconds: 10
@@ -79,13 +88,15 @@ spec:
     app.kubernetes.io/name: {{ include "farmer-registry.name" . }}-odk-enketo
     app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
-{{- if and .Values.odkCentral.enabled (not (.Values.odkCentral.enketo).existingSecret) }}
+{{- $generatedEnketoSecretName := include "odk-central.enketoFullname" . -}}
+{{- $existingGeneratedEnketoSecret := lookup "v1" "Secret" .Release.Namespace $generatedEnketoSecretName -}}
+{{- if and .Values.odkCentral.enabled (not (.Values.odkCentral.enketo).existingSecret) (not $existingGeneratedEnketoSecret) }}
 ---
 ## Auto-generated Enketo API key secret (only if no existing secret provided)
 apiVersion: v1
 kind: Secret
 metadata:
-  name: {{ include "odk-central.enketoFullname" . }}
+  name: {{ $generatedEnketoSecretName }}
   labels:
     {{- include "odk-central.labels" . | nindent 4 }}
     app.kubernetes.io/component: enketo

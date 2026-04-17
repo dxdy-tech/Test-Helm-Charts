@@ -6,8 +6,11 @@ metadata:
   labels:
     {{- include "social-registry.labels" . | nindent 4 }}
 data:
+  HOME: "/bitnami/odoo"
   PROXY_MODE: {{ if .Values.socialRegistry.odoo.proxyMode }}"True"{{ else }}"False"{{ end }}
   LIST_DB: {{ if .Values.socialRegistry.odoo.listDb }}"True"{{ else }}"False"{{ end }}
+  ODOO_SKIP_BOOTSTRAP: {{ if .Values.socialRegistry.odoo.skipBootstrap }}"yes"{{ else }}"no"{{ end }}
+  ODOO_SKIP_MODULES_UPDATE: {{ if .Values.socialRegistry.odoo.skipModulesUpdate }}"yes"{{ else }}"no"{{ end }}
   WORKERS: {{ .Values.socialRegistry.odoo.workers | quote }}
   MAX_CRON_THREADS: {{ .Values.socialRegistry.odoo.maxCronThreads | quote }}
   DBFILTER: {{ .Values.socialRegistry.odoo.dbfilter | quote }}

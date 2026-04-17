@@ -142,6 +142,8 @@ spec:
             - name: filestore
               mountPath: {{ .Values.socialRegistry.persistence.mountPath | default "/var/lib/odoo/filestore" }}
             {{- end }}
+            - name: startup-config
+              mountPath: /docker-entrypoint-init.d
             {{- with .Values.socialRegistry.extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -151,6 +153,10 @@ spec:
           persistentVolumeClaim:
             claimName: {{ include "social-registry.pvcName" . }}
         {{- end }}
+        - name: startup-config
+          configMap:
+            name: {{ include "social-registry.fullname" . }}-startup
+            defaultMode: 0755
         {{- with .Values.socialRegistry.extraVolumes }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

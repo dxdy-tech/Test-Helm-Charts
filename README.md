@@ -188,7 +188,7 @@ See `values.yaml` for the full schema. Key sections:
 | `socialRegistry.odoo.autoInstallModules` | Auto-install on startup | `false` |
 | `socialRegistry.resources` | CPU/memory requests/limits | 500m/1Gi — 2/4Gi |
 | `socialRegistry.autoscaling.*` | HPA configuration | disabled |
-| `socialRegistry.persistence.*` | PVC for Odoo filestore | 10Gi RWX |
+| `socialRegistry.persistence.*` | PVC for Bitnami/OpenG2P app data under `/bitnami/odoo` | 10Gi RWX |
 
 ### ODK Central
 
@@ -200,6 +200,7 @@ See `values.yaml` for the full schema. Key sections:
 | `odkCentral.database.internal.enabled` | Deploy in-cluster PG | `false` |
 | `odkCentral.database.external.*` | External PG connection | — |
 | `odkCentral.enketo.enabled` | Deploy Enketo service | `true` |
+| `odkCentral.enketo.redis.enabled` | Deploy in-cluster Redis for Enketo | `true` |
 | `odkCentral.pyxform.enabled` | Deploy Pyxform service | `true` |
 | `odkCentral.resources` | CPU/memory requests/limits | 250m/512Mi — 1/2Gi |
 
@@ -324,7 +325,9 @@ socialRegistry:
 
 ### How it works
 
-The module list is defined in `socialRegistry.odoo.modules` as a simple YAML array. At template time, Helm joins the list into a comma-separated string and passes it to the Odoo container as the `ODOO_MODULES` environment variable. The `ODOO_AUTO_INSTALL_MODULES` env var controls whether Odoo should attempt to auto-install them on startup.
+The module list is defined in `socialRegistry.odoo.modules` as a simple YAML array. At template time, Helm joins the list into a comma-separated string and passes it to the Odoo container as the `ODOO_MODULES` environment variable.
+
+For the current `openg2p/openg2p-social-registry-core` image, startup behavior is primarily controlled by Bitnami's `ODOO_SKIP_BOOTSTRAP` and `ODOO_SKIP_MODULES_UPDATE` flags. Use those when pointing the chart at an already initialized external database.
 
 **Helm does NOT validate whether the listed modules exist in the image.** This is intentional. The chart's job is to pass configuration; the custom image is solely responsible for containing the addons.
 
@@ -351,8 +354,8 @@ socialRegistry:
 
 | `autoInstallModules` | Behavior |
 |---------------------|----------|
-| `false` (default) | Module names are available as env vars but Odoo does **not** force-install them. The operator must trigger installation via the Odoo UI or CLI. |
-| `true` | Odoo will attempt to install/update the listed modules on startup. Only enable this after confirming the image contains all listed modules. |
+| `false` (default) | Module names are exposed as env vars only. On a pre-initialized database, also set `skipBootstrap: true` to prevent the image from re-running first-boot initialization. |
+| `true` | Keep bootstrap enabled and allow the image's normal initialization/update flow. Only use this when the target database is meant to be bootstrapped by the container. |
 
 ---
 

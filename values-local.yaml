@@ -19,24 +19,23 @@ socialRegistry:
     pullPolicy: IfNotPresent
 
   ## -- Ingress (Kubernetes-native, not OpenShift Route)
-  # ingress:
-  #   enabled: true
-  #   className: nginx
-  #   hostname: farmer-registry-qa.agrariandept.gov.lk
-  #   tls:
-  #     enabled: true
-  #     secretName: openg2p-social-registry-tls-qa
-  #   annotations:
-  #     cert-manager.io/cluster-issuer: letsencrypt-qa
-  #     nginx.ingress.kubernetes.io/proxy-body-size: "100m"
-  #     nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+  ingress:
+    enabled: true
+    className: nginx
+    hostname: social-registry.local
+    tls:
+      enabled: false
+      secretName: openg2p-social-registry-tls-qa
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+      nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
 
   ## -- External PostgreSQL (no in-cluster PG for Social Registry)
   externalPostgresql:
-    host: 172.30.244.47
+    host: dev-shared-psql-public.cllbafxvofzs.ap-southeast-1.rds.amazonaws.com
     port: 5432
-    database: social_registry
-    username: social_registry_user
+    database: social_registry_local
+    username: social_registry_local
     existingSecret: openg2p-social-registry-db-qa
     sslmode: require
 
@@ -47,6 +46,8 @@ socialRegistry:
     realm: openg2p-qa
     clientId: openg2p-social-registry-qa
     existingSecret: openg2p-social-registry-keycloak-qa
+    secretKeys:
+      clientSecret: client-secret
 
   ## -- External MinIO / S3
   externalMinio:
@@ -54,10 +55,13 @@ socialRegistry:
     bucket: social-registry
     secure: true
     existingSecret: openg2p-social-registry-minio-qa
+    secretKeys:
+      accessKey: access-key
+      secretKey: secret-key
 
   ## -- ODK Central integration (consumed by g2p_odk_importer / g2p_odk_user_mapping)
   odkIntegration:
-    centralUrl: https://odk-qa.apps.sovecloud.akaza.lk
+    centralUrl: http://odk.local
 
   ## -- Odoo runtime configuration
   odoo:
@@ -65,8 +69,8 @@ socialRegistry:
     email: "devops@global.vsoneworld.com"
     ## Existing secret holding the Odoo master admin password
     adminPasswordExistingSecret: openg2p-social-registry-admin-qa
-    ## When false, module list is exposed as env var but NOT force-installed.
-    autoInstallModules: true
+    adminPasswordSecretKey: password
+
     ## Number of Odoo worker processes
     workers: 6
     ## Maximum cron thread count
@@ -99,12 +103,23 @@ socialRegistry:
   ## -- Persistence
   persistence:
     enabled: true
-    storageClass: nfs-client
+    storageClass: standard
     size: 10Gi
+
+  startupProbe:
+    enabled: true
+    httpGet:
+      path: /web/health
+      port: http
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 120
+    successThreshold: 1
 
   ## -- Horizontal Pod Autoscaler
   autoscaling:
-    enabled: true
+    enabled: false
     minReplicas: 1
     maxReplicas: 1
     targetCPUUtilizationPercentage: 70
@@ -116,16 +131,16 @@ socialRegistry:
 
   ## -- NetworkPolicy
   networkPolicy:
-    enabled: true
+    enabled: false
 
   ## -- Schedule on worker nodes only
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: node-role.kubernetes.io/control-plane
-                operator: DoesNotExist
+  # affinity:
+  #   nodeAffinity:
+  #     requiredDuringSchedulingIgnoredDuringExecution:
+  #       nodeSelectorTerms:
+  #         - matchExpressions:
+  #             - key: node-role.kubernetes.io/control-plane
+  #               operator: DoesNotExist
 
 ## ---------------------------------------------------------------------------
 ## ODK Central
@@ -147,21 +162,26 @@ odkCentral:
       pullPolicy: IfNotPresent
 
   ## -- Ingress
-  # ingress:
-  #   enabled: true
-  #   className: nginx
-  #   hostname: odk-qa.agrariandept.gov.lk
-  #   tls:
-  #     enabled: true
-  #     secretName: openg2p-odk-tls-qa
-  #   annotations:
-  #     cert-manager.io/cluster-issuer: letsencrypt-qa
-  #     nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+  ingress:
+    enabled: true
+    className: nginx
+    hostname: odk.local
+    tls:
+      enabled: false
+      secretName: openg2p-odk-tls-qa
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: "100m"
 
   ## -- Admin account
   admin:
     email: Chamath.Ellawala@global.vsoneworld.com
     passwordExistingSecret: openg2p-odk-admin-qa
+    passwordSecretKey: password
+
+  ## -- Enketo dependencies
+  enketo:
+    redis:
+      enabled: true
 
   ## -- Database configuration
   database:
@@ -169,16 +189,17 @@ odkCentral:
     internal:
       enabled: false
     external:
-      host: 172.30.244.47
+      host: dev-shared-psql-public.cllbafxvofzs.ap-southeast-1.rds.amazonaws.com
       port: 5432
-      database: odk
-      username: odk_user
+      database: odk_local
+      username: odk_local
       existingSecret: openg2p-odk-db-qa
+      ssl: require
 
   ## -- Persistence
   persistence:
     enabled: true
-    storageClass: nfs-client
+    storageClass: standard
     size: 20Gi
 
   ## -- Resource requests and limits (backend)
@@ -192,7 +213,7 @@ odkCentral:
 
   ## -- Horizontal Pod Autoscaler
   autoscaling:
-    enabled: true
+    enabled: false
     minReplicas: 1
     maxReplicas: 1
     targetCPUUtilizationPercentage: 70
@@ -204,13 +225,13 @@ odkCentral:
 
   ## -- NetworkPolicy
   networkPolicy:
-    enabled: true
+    enabled: false
 
   ## -- Schedule on worker nodes only (RKE2 control-plane anti-affinity)
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: node-role.kubernetes.io/control-plane
-                operator: DoesNotExist
+  # affinity:
+  #   nodeAffinity:
+  #     requiredDuringSchedulingIgnoredDuringExecution:
+  #       nodeSelectorTerms:
+  #         - matchExpressions:
+  #             - key: node-role.kubernetes.io/control-plane
+  #               operator: DoesNotExist
