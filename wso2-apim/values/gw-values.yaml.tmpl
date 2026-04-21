@@ -1,0 +1,89 @@
+fullnameOverride: "apim-gateway"
+
+kubernetes:
+  ingressClass: "${INGRESS_CLASS}"
+  ingress:
+    tlsSecret: "${TLS_SECRET_NAME}"
+    gateway:
+      enabled: true
+      hostname: "${GW_HOSTNAME}"
+      annotations:
+        nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+        nginx.ingress.kubernetes.io/proxy-buffering: "on"
+        nginx.ingress.kubernetes.io/proxy-buffer-size: "8k"
+    websocket:
+      enabled: true
+      hostname: "${WS_HOSTNAME}"
+      annotations: {}
+    websub:
+      enabled: true
+      hostname: "${WEBSUB_HOSTNAME}"
+      annotations: {}
+
+wso2:
+  apim:
+    configurations:
+      userStore:
+        type: "database_unique_id"
+        properties: null
+      adminUsername: "${APIM_ADMIN_USERNAME}"
+      adminPassword: "${APIM_ADMIN_PASSWORD}"
+      databases:
+        type: "postgres"
+        jdbc:
+          driver: "org.postgresql.Driver"
+        shared_db:
+          url: "jdbc:postgresql://${DB_HOST}:${DB_PORT}/${SHARED_DB_NAME}"
+          username: "${DB_USERNAME}"
+          password: "${DB_PASSWORD}"
+      security:
+        jksSecretName: "${KEYSTORE_SECRET_NAME}"
+        keystores:
+          primary:
+            password: "${KEYSTORE_PASSWORD}"
+            keyPassword: "${KEYSTORE_KEY_PASSWORD}"
+          tls:
+            password: "${KEYSTORE_PASSWORD}"
+            keyPassword: "${KEYSTORE_KEY_PASSWORD}"
+          internal:
+            password: "${KEYSTORE_PASSWORD}"
+            keyPassword: "${KEYSTORE_KEY_PASSWORD}"
+        truststore:
+          password: "${KEYSTORE_PASSWORD}"
+      km:
+        serviceUrl: "apim-control-plane-service"
+        servicePort: 9443
+      eventhub:
+        enabled: true
+        serviceUrl: "apim-control-plane-service"
+        servicePort: 9443
+        urls:
+          - "apim-control-plane-service"
+      throttling:
+        serviceUrl: "apim-traffic-manager-service"
+        servicePort: 9443
+        urls:
+          - "apim-traffic-manager-service"
+
+  deployment:
+    image:
+      imagePullSecrets:
+        enabled: false
+      registry: "${CUSTOM_IMAGE_REGISTRY}"
+      repository: "${GW_CUSTOM_IMAGE_REPOSITORY}"
+      tag: "${GW_IMAGE_TAG}"
+      imagePullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: "${GW_CPU_REQUEST}"
+        memory: "${GW_MEMORY_REQUEST}"
+      limits:
+        cpu: "${GW_CPU_LIMIT}"
+        memory: "${GW_MEMORY_LIMIT}"
+      jvm:
+        memory:
+          xms: "${GW_JVM_XMS}"
+          xmx: "${GW_JVM_XMX}"
+    replicas: ${GW_REPLICAS}
+    minReplicas: ${GW_MIN_REPLICAS}
+    maxReplicas: ${GW_MAX_REPLICAS}

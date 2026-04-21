@@ -1,0 +1,156 @@
+# Istio Gateway and VirtualServices for WSO2 API Manager Pattern 3.
+#
+# TLS mode: PASSTHROUGH — upstream APIM pods terminate TLS using their own JKS keystores,
+# so the ingress gateway forwards raw TLS and does not terminate or re-encrypt.
+# If a shared edge TLS cert is preferred, change mode to SIMPLE and set credentialName.
+#
+# ISTIO_GATEWAY_NAME  : name of the Gateway resource (default: apim-istio-gateway)
+# ISTIO_TLS_MODE      : PASSTHROUGH | SIMPLE (default: PASSTHROUGH)
+# ISTIO_TLS_CREDENTIAL: credentialName for the TLS cert when mode=SIMPLE (ignored for PASSTHROUGH)
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: ${ISTIO_GATEWAY_NAME}
+  namespace: ${NAMESPACE}
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    # Control plane (ACP) — HTTPS
+    - port:
+        number: 443
+        name: https-control-plane
+        protocol: HTTPS
+      hosts:
+        - "${CONTROL_PLANE_HOSTNAME}"
+      tls:
+        mode: ${ISTIO_TLS_MODE}
+        credentialName: "${ISTIO_TLS_CREDENTIAL}"
+    # API Gateway — HTTPS (pass-through API traffic)
+    - port:
+        number: 443
+        name: https-gateway
+        protocol: HTTPS
+      hosts:
+        - "${GW_HOSTNAME}"
+      tls:
+        mode: ${ISTIO_TLS_MODE}
+        credentialName: "${ISTIO_TLS_CREDENTIAL}"
+    # WebSocket gateway
+    - port:
+        number: 443
+        name: https-websocket
+        protocol: HTTPS
+      hosts:
+        - "${WS_HOSTNAME}"
+      tls:
+        mode: ${ISTIO_TLS_MODE}
+        credentialName: "${ISTIO_TLS_CREDENTIAL}"
+    # WebSub gateway
+    - port:
+        number: 443
+        name: https-websub
+        protocol: HTTPS
+      hosts:
+        - "${WEBSUB_HOSTNAME}"
+      tls:
+        mode: ${ISTIO_TLS_MODE}
+        credentialName: "${ISTIO_TLS_CREDENTIAL}"
+
+---
+# VirtualService: Control Plane (ACP)
+# Handles APIM publisher, developer portal, and admin UI at port 9443.
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: apim-control-plane-vs
+  namespace: ${NAMESPACE}
+spec:
+  gateways:
+    - ${NAMESPACE}/${ISTIO_GATEWAY_NAME}
+  hosts:
+    - "${CONTROL_PLANE_HOSTNAME}"
+  tls:
+    - match:
+        - port: 443
+          sniHosts:
+            - "${CONTROL_PLANE_HOSTNAME}"
+      route:
+        - destination:
+            host: apim-control-plane-service
+            port:
+              number: 9443
+
+---
+# VirtualService: API Gateway
+# Routes HTTPS API traffic (port 8243) for published APIs.
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: apim-gateway-vs
+  namespace: ${NAMESPACE}
+spec:
+  gateways:
+    - ${NAMESPACE}/${ISTIO_GATEWAY_NAME}
+  hosts:
+    - "${GW_HOSTNAME}"
+  tls:
+    - match:
+        - port: 443
+          sniHosts:
+            - "${GW_HOSTNAME}"
+      route:
+        - destination:
+            host: apim-gateway-service
+            port:
+              number: 8243
+
+---
+# VirtualService: WebSocket Gateway
+# Routes HTTPS/WSS traffic (port 9099) for streaming APIs.
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: apim-websocket-vs
+  namespace: ${NAMESPACE}
+spec:
+  gateways:
+    - ${NAMESPACE}/${ISTIO_GATEWAY_NAME}
+  hosts:
+    - "${WS_HOSTNAME}"
+  tls:
+    - match:
+        - port: 443
+          sniHosts:
+            - "${WS_HOSTNAME}"
+      route:
+        - destination:
+            host: apim-gateway-service
+            port:
+              number: 9099
+
+---
+# VirtualService: WebSub Gateway
+# Routes HTTPS traffic (port 8021) for WebSub/webhook delivery.
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: apim-websub-vs
+  namespace: ${NAMESPACE}
+spec:
+  gateways:
+    - ${NAMESPACE}/${ISTIO_GATEWAY_NAME}
+  hosts:
+    - "${WEBSUB_HOSTNAME}"
+  tls:
+    - match:
+        - port: 443
+          sniHosts:
+            - "${WEBSUB_HOSTNAME}"
+      route:
+        - destination:
+            host: apim-gateway-service
+            port:
+              number: 8021

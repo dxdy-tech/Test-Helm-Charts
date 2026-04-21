@@ -1,0 +1,76 @@
+fullnameOverride: "apim-control-plane"
+
+kubernetes:
+  ingressClass: "${INGRESS_CLASS}"
+  ingress:
+    tlsSecret: "${TLS_SECRET_NAME}"
+    controlPlane:
+      enabled: true
+      hostname: "${CONTROL_PLANE_HOSTNAME}"
+      annotations:
+        nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+        nginx.ingress.kubernetes.io/affinity: "cookie"
+        nginx.ingress.kubernetes.io/session-cookie-name: "route"
+        nginx.ingress.kubernetes.io/session-cookie-hash: "sha1"
+
+wso2:
+  apim:
+    configurations:
+      userStore:
+        type: "database_unique_id"
+        properties: null
+      adminUsername: "${APIM_ADMIN_USERNAME}"
+      adminPassword: "${APIM_ADMIN_PASSWORD}"
+      databases:
+        type: "postgres"
+        jdbc:
+          driver: "org.postgresql.Driver"
+        apim_db:
+          url: "jdbc:postgresql://${DB_HOST}:${DB_PORT}/${APIM_DB_NAME}"
+          username: "${DB_USERNAME}"
+          password: "${DB_PASSWORD}"
+        shared_db:
+          url: "jdbc:postgresql://${DB_HOST}:${DB_PORT}/${SHARED_DB_NAME}"
+          username: "${DB_USERNAME}"
+          password: "${DB_PASSWORD}"
+      security:
+        jksSecretName: "${KEYSTORE_SECRET_NAME}"
+        keystores:
+          primary:
+            password: "${KEYSTORE_PASSWORD}"
+            keyPassword: "${KEYSTORE_KEY_PASSWORD}"
+          tls:
+            password: "${KEYSTORE_PASSWORD}"
+            keyPassword: "${KEYSTORE_KEY_PASSWORD}"
+          internal:
+            password: "${KEYSTORE_PASSWORD}"
+            keyPassword: "${KEYSTORE_KEY_PASSWORD}"
+        truststore:
+          password: "${KEYSTORE_PASSWORD}"
+      gateway:
+        environments:
+          - name: "Default"
+            type: "hybrid"
+            gatewayType: "Regular"
+            provider: "wso2"
+            displayInApiConsole: true
+            description: "Default gateway environment"
+            showAsTokenEndpointUrl: true
+            serviceName: "apim-gateway-service"
+            servicePort: 9443
+            wsHostname: "${WS_HOSTNAME}"
+            httpHostname: "${GW_HOSTNAME}"
+            websubHostname: "${WEBSUB_HOSTNAME}"
+      oauth_config:
+        oauth2JWKSUrl: "https://apim-control-plane-service:9443/oauth2/jwks"
+
+  deployment:
+    image:
+      imagePullSecrets:
+        enabled: false
+      registry: "${CUSTOM_IMAGE_REGISTRY}"
+      repository: "${ACP_CUSTOM_IMAGE_REPOSITORY}"
+      tag: "${ACP_IMAGE_TAG}"
+      imagePullPolicy: IfNotPresent
+    replicas: ${ACP_REPLICAS}
+    highAvailability: false

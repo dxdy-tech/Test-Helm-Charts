@@ -1,0 +1,54 @@
+fullnameOverride: "apim-traffic-manager"
+
+wso2:
+  apim:
+    configurations:
+      userStore:
+        type: "database_unique_id"
+        properties: null
+      adminUsername: "${APIM_ADMIN_USERNAME}"
+      adminPassword: "${APIM_ADMIN_PASSWORD}"
+      databases:
+        type: "postgres"
+        jdbc:
+          driver: "org.postgresql.Driver"
+        apim_db:
+          url: "jdbc:postgresql://${DB_HOST}:${DB_PORT}/${APIM_DB_NAME}"
+          username: "${DB_USERNAME}"
+          password: "${DB_PASSWORD}"
+        shared_db:
+          url: "jdbc:postgresql://${DB_HOST}:${DB_PORT}/${SHARED_DB_NAME}"
+          username: "${DB_USERNAME}"
+          password: "${DB_PASSWORD}"
+      security:
+        jksSecretName: "${KEYSTORE_SECRET_NAME}"
+        keystores:
+          primary:
+            password: "${KEYSTORE_PASSWORD}"
+            keyPassword: "${KEYSTORE_KEY_PASSWORD}"
+          tls:
+            password: "${KEYSTORE_PASSWORD}"
+            keyPassword: "${KEYSTORE_KEY_PASSWORD}"
+          internal:
+            password: "${KEYSTORE_PASSWORD}"
+            keyPassword: "${KEYSTORE_KEY_PASSWORD}"
+        truststore:
+          password: "${KEYSTORE_PASSWORD}"
+      km:
+        serviceUrl: "apim-control-plane-service"
+        servicePort: 9443
+      eventhub:
+        serviceUrl: "apim-control-plane-service"
+        urls:
+          - "apim-control-plane-service"
+
+  deployment:
+    image:
+      imagePullSecrets:
+        enabled: false
+      registry: "${CUSTOM_IMAGE_REGISTRY}"
+      repository: "${TM_CUSTOM_IMAGE_REPOSITORY}"
+      tag: "${TM_IMAGE_TAG}"
+      imagePullPolicy: IfNotPresent
+    replicas: ${TM_REPLICAS}
+    highAvailability: false
