@@ -1,0 +1,114 @@
+cloudName: "${CLOUD_NAME}"
+
+containerRegistry: "${ICP_IMAGE_REGISTRY}"
+
+wso2:
+  ingress:
+    enabled: ${ENABLE_INGRESS}
+    ingressClassName: "${INGRESS_CLASS}"
+    tlsSecret: "${TLS_SECRET_NAME}"
+    annotations:
+      nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    ratelimit:
+      enabled: false
+      zoneName: ""
+      burstLimit: ""
+    metrics:
+      annotations:
+        nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+
+  config:
+    # Service accounts ICP uses to connect to Integrator runtimes.
+    # mi credentials must match the MI admin credentials.
+    serviceAccount:
+      mi:
+        username: "${MI_ADMIN_USERNAME}"
+        password: "${MI_ADMIN_PASSWORD}"
+      bi:
+        username: "bal_admin"
+        password: "bal_secret"
+      si:
+        username: "admin"
+        password: "admin"
+    userstore:
+      file:
+        enabled: true
+    secureVault:
+      enabled: false
+    keyStore:
+      # Reuse the same JKS files as MI (created by generate-keystores.sh and stored in KEYSTORE_SECRET_NAME)
+      fileName: "wso2carbon.jks"
+      alias: "wso2carbon"
+      password: "${KEYSTORE_PASSWORD}"
+      keyPassword: "${KEYSTORE_KEY_PASSWORD}"
+    trustStore:
+      fileName: "client-truststore.jks"
+      password: "${KEYSTORE_PASSWORD}"
+    sso:
+      enabled: false
+    heartbeatPoolSize: 15
+    serverPort: 9743
+
+  deployment:
+    securityContext:
+      apparmor: false
+      seccompProfile:
+        enabled: false
+        type: RuntimeDefault
+      enableRunAsUser: false
+      runAsUser: "10802"
+      seLinux:
+        enabled: false
+        level: "s0:c26,c0"
+    hostname: "${ICP_HOSTNAME}"
+    BuildVersion: "${ICP_BUILD_VERSION}"
+    JKSSecretName: "${KEYSTORE_SECRET_NAME}"
+    imagePullSecrets: "${WSO2_IMAGE_PULL_SECRET_NAME}"
+    image:
+      repository: "${ICP_IMAGE_REPOSITORY}"
+      tag: "${ICP_IMAGE_TAG}"
+      pullPolicy: ${ICP_IMAGE_PULL_POLICY}
+
+    replicas: ${ICP_REPLICAS}
+    minReplicas: 1
+    maxReplicas: 2
+    cpuUtilizationPercentage: 75
+    memoryUtilizationPercentage: 75
+    minAvailable: 1
+
+    probes:
+      startup:
+        initialDelaySeconds: 15
+        periodSeconds: 3
+        failureThreshold: 40
+      liveness:
+        periodSeconds: 10
+      readiness:
+        initialDelaySeconds: 60
+        periodSeconds: 1
+
+    resources:
+      requests:
+        cpu: "${ICP_CPU_REQUEST}"
+        memory: "${ICP_MEMORY_REQUEST}"
+      limits:
+        cpu: "${ICP_CPU_LIMIT}"
+        memory: "${ICP_MEMORY_LIMIT}"
+      jvm:
+        memory:
+          xms: "${ICP_JVM_XMS}"
+          xmx: "${ICP_JVM_XMX}"
+
+    # Fix: chart default "0407" (octal) gives owner read-only; 0755 gives rwxr-xr-x.
+    configMaps:
+      entryPoint:
+        defaultMode: 0755
+
+    pdb:
+      enabled: false
+      minAvailable: 1
+
+    strategy:
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0

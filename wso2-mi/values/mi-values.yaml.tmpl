@@ -1,0 +1,104 @@
+cloudName: "${CLOUD_NAME}"
+
+containerRegistry: "${CUSTOM_IMAGE_REGISTRY}"
+
+wso2:
+  subscription:
+    username: "${IMAGE_PULL_SECRET_USERNAME}"
+    password: "${IMAGE_PULL_SECRET_PASSWORD}"
+
+  ingress:
+    enabled: ${ENABLE_INGRESS}
+    ingressClassName: "${INGRESS_CLASS}"
+    tlsSecret: "${TLS_SECRET_NAME}"
+    annotations:
+      nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+
+  gatewayAPI:
+    enabled: ${ENABLE_GATEWAY_API}
+    createGateway: ${GATEWAY_CREATE}
+    gatewayClassName: "${GATEWAY_CLASS_NAME}"
+    gatewayName: "${GATEWAY_NAME}"
+    gatewayNamespace: "${GATEWAY_NAMESPACE}"
+    tlsSecret: "${GATEWAY_TLS_SECRET}"
+    backendTLS:
+      enabled: ${GATEWAY_BACKEND_TLS_ENABLED}
+      hostname: "${GATEWAY_BACKEND_TLS_HOSTNAME}"
+    ratelimit:
+      enabled: ${GATEWAY_RATE_LIMIT_ENABLED}
+      requestsPerSecond: ${GATEWAY_RATE_LIMIT_RPS}
+      burst: ${GATEWAY_RATE_LIMIT_BURST}
+
+  config:
+    portOffset: ${MI_PORT_OFFSET}
+    admin:
+      username: "${MI_ADMIN_USERNAME}"
+      password: "${MI_ADMIN_PASSWORD}"
+      createAdminAccount: false
+    userstore:
+      file:
+        enabled: true
+    secureVault:
+      enabled: false
+    keyStore:
+      primary:
+        fileName: "wso2carbon.jks"
+        alias: "wso2carbon"
+        password: "${KEYSTORE_PASSWORD}"
+        keyPassword: "${KEYSTORE_KEY_PASSWORD}"
+      internal:
+        fileName: "wso2internal.jks"
+        alias: "wso2carbon"
+        password: "${KEYSTORE_PASSWORD}"
+        keyPassword: "${KEYSTORE_KEY_PASSWORD}"
+    trustStore:
+      primary:
+        fileName: "client-truststore.jks"
+        password: "${KEYSTORE_PASSWORD}"
+
+  deployment:
+    hostname: "${MI_HOSTNAME}"
+    BuildVersion: "${MI_BUILD_VERSION}"
+    JKSSecretName: "${KEYSTORE_SECRET_NAME}"
+    imagePullSecrets: "${IMAGE_PULL_SECRET_NAME}"
+    image:
+      repository: "${MI_CUSTOM_IMAGE_REPOSITORY}"
+      tag: "${MI_IMAGE_TAG}"
+      pullPolicy: ${MI_IMAGE_PULL_POLICY}
+
+    replicas: ${MI_REPLICAS}
+    hpa:
+      enabled: ${MI_HPA_ENABLED}
+      minReplicas: ${MI_MIN_REPLICAS}
+      maxReplicas: ${MI_MAX_REPLICAS}
+      cpuUtilizationPercentage: ${MI_HPA_CPU_PERCENT}
+      memoryUtilizationPercentage: ${MI_HPA_MEMORY_PERCENT}
+
+    resources:
+      requests:
+        cpu: "${MI_CPU_REQUEST}"
+        memory: "${MI_MEMORY_REQUEST}"
+      limits:
+        cpu: "${MI_CPU_LIMIT}"
+        memory: "${MI_MEMORY_LIMIT}"
+      jvm:
+        memory:
+          xms: "${MI_JVM_XMS}"
+          xmx: "${MI_JVM_XMX}"
+
+    # Fix: chart default "0407" (octal) gives owner read-only; 0755 gives rwxr-xr-x.
+    configMaps:
+      entryPoint:
+        defaultMode: 0755
+
+    pdb:
+      enabled: false
+      minAvailable: 1
+
+    strategy:
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+
+    synapseTest:
+      enabled: false

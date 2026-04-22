@@ -1,0 +1,11 @@
+# Place WSO2 MI integration CAR files here before running `make deploy`.
+# Each .car file is a Composite Application aRchive built by `mvn clean install -Pdocker`
+# in an MI integration project (developed with the WSO2 MI for VS Code extension).
+#
+# Example — Currency Converter sample:
+#   wget https://mi.docs.wso2.com/en/4.5.0/assets/attachments/install-and-setup/currencyconverter.zip
+#   unzip currencyconverter.zip && cd currencyconverter && mvn clean install -Pdocker
+#   cp target/CurrencyConverter*.car <wso2-mi>/docker/carbonapps/
+#
+# The .car files in this directory are copied into the Docker image at:
+#   /home/wso2carbon/wso2mi-4.5.0.16/repository/deployment/server/carbonapps/
