@@ -59,7 +59,7 @@ done
 
 schema_ready=false
 set +e
-bash "${SCRIPT_DIR}/check-schema.sh" "${ENV_FILE}" >/dev/null
+bash "${SCRIPT_DIR}/check-schema.sh" "${ENV_FILE}"
 schema_check_status=$?
 set -e
 
@@ -84,16 +84,27 @@ fi
 "${SCRIPT_DIR}/pull-charts.sh" "${ENV_FILE}"
 bash "${SCRIPT_DIR}/patch-resource-names.sh" "${ENV_FILE}"
 bash "${SCRIPT_DIR}/patch-key-manager-config.sh" "${ENV_FILE}"
+bash "${SCRIPT_DIR}/patch-node-affinity.sh" "${ENV_FILE}"
+bash "${SCRIPT_DIR}/patch-log4j2.sh" "${ENV_FILE}"
 
 # Render and apply Istio Gateway + VirtualServices
-require_vars ISTIO_GATEWAY_NAME ISTIO_TLS_MODE
+require_vars ISTIO_GATEWAY_NAME
 mkdir -p "${ROOT_DIR}/generated"
 envsubst < "${ROOT_DIR}/manifests/istio.yaml.tmpl" > "${ROOT_DIR}/generated/istio.yaml"
 kubectl apply -f "${ROOT_DIR}/generated/istio.yaml"
 
 CHART_CACHE_DIR="${ROOT_DIR}/generated/charts"
 
-HELM_FLAGS=(--namespace "${NAMESPACE}" --create-namespace)
+# The log4j2 patch runs after chart extraction and writes the ConfigMap data
+# with kubectl-client ownership. On Helm upgrades that conflicts with Helm SSA.
+# Pre-delete so Helm recreates them cleanly on every upgrade.
+kubectl -n "${NAMESPACE}" delete configmap \
+  openg2p-wso2-apim-control-plane-conf-log4j2 \
+  openg2p-wso2-apim-traffic-manager-conf-log4j2 \
+  openg2p-wso2-apim-gateway-conf-log4j2 \
+  --ignore-not-found 2>/dev/null || true
+
+HELM_FLAGS=(--namespace "${NAMESPACE}" --create-namespace --force-conflicts)
 if is_true "${HELM_WAIT}"; then
   HELM_FLAGS+=(--wait --timeout "${HELM_TIMEOUT}")
 fi

@@ -1,15 +1,14 @@
-# Istio Gateway and VirtualServices for WSO2 API Manager Pattern 3.
+# Istio Gateway, VirtualServices, and DestinationRules for WSO2 API Manager Pattern 3.
 #
-# TLS mode: PASSTHROUGH — upstream APIM pods terminate TLS using their own JKS keystores,
-# so the ingress gateway forwards raw TLS and does not terminate or re-encrypt.
-# If a shared edge TLS cert is preferred, change mode to SIMPLE and set credentialName.
+# The ingress gateway accepts plain HTTP on port 80. VirtualServices inject the
+# x-forwarded-proto: https header so APIM sees HTTPS requests. DestinationRules
+# configure TLS (SIMPLE + insecureSkipVerify) toward the APIM pods, which serve
+# HTTPS on their actual service ports.
 #
-# ISTIO_GATEWAY_NAME  : name of the Gateway resource (default: apim-istio-gateway)
-# ISTIO_TLS_MODE      : PASSTHROUGH | SIMPLE (default: PASSTHROUGH)
-# ISTIO_TLS_CREDENTIAL: credentialName for the TLS cert when mode=SIMPLE (ignored for PASSTHROUGH)
+# ISTIO_GATEWAY_NAME: name of the Gateway resource (default: apim-istio-gateway)
 
 ---
-apiVersion: networking.istio.io/v1beta1
+apiVersion: networking.istio.io/v1
 kind: Gateway
 metadata:
   name: ${ISTIO_GATEWAY_NAME}
@@ -18,51 +17,20 @@ spec:
   selector:
     istio: ingressgateway
   servers:
-    # Control plane (ACP) — HTTPS
     - port:
-        number: 443
-        name: https-control-plane
-        protocol: HTTPS
+        name: http-apim
+        number: 80
+        protocol: HTTP
       hosts:
         - "${CONTROL_PLANE_HOSTNAME}"
-      tls:
-        mode: ${ISTIO_TLS_MODE}
-        credentialName: "${ISTIO_TLS_CREDENTIAL}"
-    # API Gateway — HTTPS (pass-through API traffic)
-    - port:
-        number: 443
-        name: https-gateway
-        protocol: HTTPS
-      hosts:
         - "${GW_HOSTNAME}"
-      tls:
-        mode: ${ISTIO_TLS_MODE}
-        credentialName: "${ISTIO_TLS_CREDENTIAL}"
-    # WebSocket gateway
-    - port:
-        number: 443
-        name: https-websocket
-        protocol: HTTPS
-      hosts:
         - "${WS_HOSTNAME}"
-      tls:
-        mode: ${ISTIO_TLS_MODE}
-        credentialName: "${ISTIO_TLS_CREDENTIAL}"
-    # WebSub gateway
-    - port:
-        number: 443
-        name: https-websub
-        protocol: HTTPS
-      hosts:
         - "${WEBSUB_HOSTNAME}"
-      tls:
-        mode: ${ISTIO_TLS_MODE}
-        credentialName: "${ISTIO_TLS_CREDENTIAL}"
 
 ---
 # VirtualService: Control Plane (ACP)
 # Handles APIM publisher, developer portal, and admin UI at port 9443.
-apiVersion: networking.istio.io/v1beta1
+apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: apim-control-plane-vs
@@ -72,21 +40,41 @@ spec:
     - ${NAMESPACE}/${ISTIO_GATEWAY_NAME}
   hosts:
     - "${CONTROL_PLANE_HOSTNAME}"
-  tls:
-    - match:
-        - port: 443
-          sniHosts:
-            - "${CONTROL_PLANE_HOSTNAME}"
+  http:
+    - name: control-plane
+      headers:
+        request:
+          set:
+            x-forwarded-proto: https
       route:
         - destination:
-            host: apim-control-plane-service
+            host: openg2p-wso2-apim-control-plane-service
             port:
               number: 9443
 
 ---
+# DestinationRule: Control Plane — upstream speaks HTTPS.
+# exportTo restricts this rule to the istio-system namespace (ingress gateway only).
+# In-cluster pod-to-pod traffic uses Istio auto-mTLS (no SIMPLE TLS origination),
+# which avoids double-TLS since WSO2 already wraps its connections in TLS.
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: apim-control-plane-dr
+  namespace: ${NAMESPACE}
+spec:
+  exportTo:
+    - "istio-system"
+  host: openg2p-wso2-apim-control-plane-service
+  trafficPolicy:
+    tls:
+      mode: SIMPLE
+      insecureSkipVerify: true
+
+---
 # VirtualService: API Gateway
-# Routes HTTPS API traffic (port 8243) for published APIs.
-apiVersion: networking.istio.io/v1beta1
+# Routes HTTP→HTTPS API traffic (port 8243) for published APIs.
+apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: apim-gateway-vs
@@ -96,21 +84,41 @@ spec:
     - ${NAMESPACE}/${ISTIO_GATEWAY_NAME}
   hosts:
     - "${GW_HOSTNAME}"
-  tls:
-    - match:
-        - port: 443
-          sniHosts:
-            - "${GW_HOSTNAME}"
+  http:
+    - name: gateway
+      headers:
+        request:
+          set:
+            x-forwarded-proto: https
       route:
         - destination:
-            host: apim-gateway-service
+            host: openg2p-wso2-apim-gateway-service
             port:
               number: 8243
 
 ---
+# DestinationRule: API Gateway — upstream speaks HTTPS.
+# exportTo restricts this rule to the istio-system namespace (ingress gateway only).
+# In-cluster pod-to-pod traffic uses Istio auto-mTLS (no SIMPLE TLS origination),
+# which avoids double-TLS since WSO2 already wraps its connections in TLS.
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: apim-gateway-dr
+  namespace: ${NAMESPACE}
+spec:
+  exportTo:
+    - "istio-system"
+  host: openg2p-wso2-apim-gateway-service
+  trafficPolicy:
+    tls:
+      mode: SIMPLE
+      insecureSkipVerify: true
+
+---
 # VirtualService: WebSocket Gateway
-# Routes HTTPS/WSS traffic (port 9099) for streaming APIs.
-apiVersion: networking.istio.io/v1beta1
+# Routes traffic (port 9099) for streaming APIs. timeout=0s disables request timeout.
+apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: apim-websocket-vs
@@ -120,21 +128,22 @@ spec:
     - ${NAMESPACE}/${ISTIO_GATEWAY_NAME}
   hosts:
     - "${WS_HOSTNAME}"
-  tls:
-    - match:
-        - port: 443
-          sniHosts:
-            - "${WS_HOSTNAME}"
+  http:
+    - name: websocket
+      headers:
+        request:
+          set:
+            x-forwarded-proto: https
       route:
         - destination:
-            host: apim-gateway-service
+            host: openg2p-wso2-apim-gateway-service
             port:
               number: 9099
 
 ---
 # VirtualService: WebSub Gateway
-# Routes HTTPS traffic (port 8021) for WebSub/webhook delivery.
-apiVersion: networking.istio.io/v1beta1
+# Routes traffic (port 8021) for WebSub/webhook delivery.
+apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: apim-websub-vs
@@ -144,13 +153,14 @@ spec:
     - ${NAMESPACE}/${ISTIO_GATEWAY_NAME}
   hosts:
     - "${WEBSUB_HOSTNAME}"
-  tls:
-    - match:
-        - port: 443
-          sniHosts:
-            - "${WEBSUB_HOSTNAME}"
+  http:
+    - name: websub
+      headers:
+        request:
+          set:
+            x-forwarded-proto: https
       route:
         - destination:
-            host: apim-gateway-service
+            host: openg2p-wso2-apim-gateway-service
             port:
               number: 8021

@@ -8,7 +8,7 @@ source "${SCRIPT_DIR}/lib.sh"
 ENV_FILE="${1:-${ROOT_DIR}/.env}"
 load_env_file "${ENV_FILE}"
 require_commands keytool
-require_vars KEYSTORE_PASSWORD KEYSTORE_KEY_PASSWORD KEYSTORE_DNAME
+require_vars KEYSTORE_PASSWORD KEYSTORE_KEY_PASSWORD KEYSTORE_DNAME KEYSTORE_SAN
 
 KEYSTORE_DIR="${ROOT_DIR}/generated/keystores"
 PRIMARY_KEYSTORE="${KEYSTORE_DIR}/wso2carbon.jks"
@@ -30,6 +30,7 @@ keytool -genkeypair \
   -keysize 2048 \
   -validity 3650 \
   -dname "${KEYSTORE_DNAME}" \
+  -ext "SAN=${KEYSTORE_SAN}" \
   -keystore "${PRIMARY_KEYSTORE}" \
   -storetype JKS \
   -storepass "${KEYSTORE_PASSWORD}" \

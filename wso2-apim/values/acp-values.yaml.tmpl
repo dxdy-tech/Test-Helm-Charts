@@ -1,4 +1,4 @@
-fullnameOverride: "apim-control-plane"
+fullnameOverride: "openg2p-wso2-apim-control-plane"
 
 kubernetes:
   ingressClass: "${INGRESS_CLASS}"
@@ -20,7 +20,9 @@ wso2:
         type: "database_unique_id"
         properties: null
       adminUsername: "${APIM_ADMIN_USERNAME}"
-      adminPassword: "${APIM_ADMIN_PASSWORD}"
+      existingSecret:
+        secretName: "${ADMIN_SECRET_NAME}"
+        adminPasswordKey: "password"
       databases:
         type: "postgres"
         jdbc:
@@ -56,13 +58,13 @@ wso2:
             displayInApiConsole: true
             description: "Default gateway environment"
             showAsTokenEndpointUrl: true
-            serviceName: "apim-gateway-service"
+            serviceName: "openg2p-wso2-apim-gateway-service"
             servicePort: 9443
             wsHostname: "${WS_HOSTNAME}"
             httpHostname: "${GW_HOSTNAME}"
             websubHostname: "${WEBSUB_HOSTNAME}"
       oauth_config:
-        oauth2JWKSUrl: "https://apim-control-plane-service:9443/oauth2/jwks"
+        oauth2JWKSUrl: "https://openg2p-wso2-apim-control-plane-service:9443/oauth2/jwks"
 
   deployment:
     image:
@@ -72,5 +74,4 @@ wso2:
       repository: "${ACP_CUSTOM_IMAGE_REPOSITORY}"
       tag: "${ACP_IMAGE_TAG}"
       imagePullPolicy: IfNotPresent
-    replicas: ${ACP_REPLICAS}
-    highAvailability: false
+    highAvailability: ${ACP_HIGH_AVAILABILITY}

@@ -109,9 +109,20 @@ PODCMD
     --env="APIM_DB_NAME=${APIM_DB_NAME}" \
     --env="SHARED_SENTINEL_TABLE=${SHARED_SENTINEL_TABLE}" \
     --env="APIM_SENTINEL_TABLE=${APIM_SENTINEL_TABLE}" \
-    --command -- sh -ceu "${pod_cmd}"
+    --command -- sh -ceu "${pod_cmd}" \
+    2>&1 | grep -v "^$" || { echo "kubectl run failed for pod ${pod_name}." >&2; exit 1; }
 
+  # Wait for the pod object to appear in the API server before polling its phase.
   start_ts="$(date +%s)"
+  until kubectl -n "${NAMESPACE}" get pod "${pod_name}" >/dev/null 2>&1; do
+    now_ts="$(date +%s)"
+    if (( now_ts - start_ts >= timeout_seconds )); then
+      echo "Timed out waiting for pod ${pod_name} to appear." >&2
+      exit 1
+    fi
+    sleep 2
+  done
+
   while true; do
     phase="$(kubectl -n "${NAMESPACE}" get pod "${pod_name}" -o jsonpath='{.status.phase}' 2>/dev/null || true)"
     case "${phase}" in
@@ -119,8 +130,8 @@ PODCMD
         break
         ;;
       Failed)
-        kubectl -n "${NAMESPACE}" logs "${pod_name}" || true
-        kubectl -n "${NAMESPACE}" describe pod "${pod_name}" || true
+        kubectl -n "${NAMESPACE}" logs "${pod_name}" >&2 || true
+        kubectl -n "${NAMESPACE}" describe pod "${pod_name}" >&2 || true
         echo "In-cluster schema check failed in pod ${pod_name}." >&2
         exit 1
         ;;
@@ -128,8 +139,8 @@ PODCMD
 
     now_ts="$(date +%s)"
     if (( now_ts - start_ts >= timeout_seconds )); then
-      kubectl -n "${NAMESPACE}" logs "${pod_name}" || true
-      kubectl -n "${NAMESPACE}" describe pod "${pod_name}" || true
+      kubectl -n "${NAMESPACE}" logs "${pod_name}" >&2 || true
+      kubectl -n "${NAMESPACE}" describe pod "${pod_name}" >&2 || true
       echo "In-cluster schema check timed out after ${timeout}." >&2
       exit 1
     fi
@@ -141,7 +152,21 @@ PODCMD
   local shared_state
   local apim_state
 
-  logs="$(kubectl -n "${NAMESPACE}" logs "${pod_name}")"
+  # kubectl logs can transiently return NotFound immediately after a pod completes.
+  # Retry a few times to handle the race between pod completion and log registration.
+  local log_retries=10
+  logs=""
+  while [[ "${log_retries}" -gt 0 ]]; do
+    logs="$(kubectl -n "${NAMESPACE}" logs "${pod_name}" 2>/dev/null)" && break || true
+    log_retries=$(( log_retries - 1 ))
+    sleep 10
+  done
+  if [[ -z "${logs}" ]]; then
+    kubectl -n "${NAMESPACE}" describe pod "${pod_name}" >&2 || true
+    echo "Failed to retrieve logs from schema-check pod ${pod_name} after retries." >&2
+    exit 1
+  fi
+
   shared_state="$(printf '%s\n' "${logs}" | awk -F= '/^SCHEMA_SHARED=/{print $2}' | tail -n 1 | tr -d '[:space:]')"
   apim_state="$(printf '%s\n' "${logs}" | awk -F= '/^SCHEMA_APIM=/{print $2}' | tail -n 1 | tr -d '[:space:]')"
 

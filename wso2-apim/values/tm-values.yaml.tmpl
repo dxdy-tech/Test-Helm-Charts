@@ -1,4 +1,4 @@
-fullnameOverride: "apim-traffic-manager"
+fullnameOverride: "openg2p-wso2-apim-traffic-manager"
 
 wso2:
   apim:
@@ -7,7 +7,9 @@ wso2:
         type: "database_unique_id"
         properties: null
       adminUsername: "${APIM_ADMIN_USERNAME}"
-      adminPassword: "${APIM_ADMIN_PASSWORD}"
+      existingSecret:
+        secretName: "${ADMIN_SECRET_NAME}"
+        adminPasswordKey: "password"
       databases:
         type: "postgres"
         jdbc:
@@ -35,12 +37,12 @@ wso2:
         truststore:
           password: "${KEYSTORE_PASSWORD}"
       km:
-        serviceUrl: "apim-control-plane-service"
+        serviceUrl: "openg2p-wso2-apim-control-plane-service"
         servicePort: 9443
       eventhub:
-        serviceUrl: "apim-control-plane-service"
+        serviceUrl: "openg2p-wso2-apim-control-plane-service"
         urls:
-          - "apim-control-plane-service"
+${ACP_EVENTHUB_URLS}
 
   deployment:
     image:
@@ -50,5 +52,4 @@ wso2:
       repository: "${TM_CUSTOM_IMAGE_REPOSITORY}"
       tag: "${TM_IMAGE_TAG}"
       imagePullPolicy: IfNotPresent
-    replicas: ${TM_REPLICAS}
-    highAvailability: false
+    highAvailability: ${TM_HIGH_AVAILABILITY}

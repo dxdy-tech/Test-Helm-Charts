@@ -171,6 +171,23 @@ PODCMD
     exit 1
   fi
 
+  # Prepend a full schema reset so re-runs on a partially-initialised database
+  # start from a clean slate.  The check-schema guard prevents this running on
+  # an already-healthy installation.
+  for _sql in "${out_shared_sql}" "${out_apim_sql}"; do
+    { printf 'DROP SCHEMA IF EXISTS public CASCADE;\nCREATE SCHEMA public;\n'; cat "${_sql}"; } > "${_sql}.tmp"
+    mv "${_sql}.tmp" "${_sql}"
+  done
+
+  # WSO2 SQL files use plain DROP TABLE/SEQUENCE without CASCADE, which fails
+  # when FK constraints from other tables reference the table being dropped.
+  # Add CASCADE to every DROP TABLE and DROP SEQUENCE statement, then collapse
+  # any duplicates where CASCADE was already present in the original SQL.
+  sed -i -E \
+    -e 's/(DROP (TABLE|SEQUENCE)(\s+IF\s+EXISTS)?\s+\S[^;]*);/\1 CASCADE;/gI' \
+    -e 's/CASCADE[[:space:]]+CASCADE/CASCADE/gI' \
+    "${out_shared_sql}" "${out_apim_sql}"
+
   if is_true "${cleanup_pod}"; then
     kubectl -n "${NAMESPACE}" delete pod "${pod_name}" --ignore-not-found >/dev/null
   fi

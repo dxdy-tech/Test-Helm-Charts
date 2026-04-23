@@ -49,8 +49,8 @@ Your kubeconfig is expected at:
    - `IMAGE_PULL_SECRET_USERNAME` / `IMAGE_PULL_SECRET_PASSWORD` (same credentials used for `docker login docker.wso2.com`)
    - `IMAGE_PULL_SECRET_NAME` (shared pull secret name for app and helper pods)
 8. Resource names are fixed to the following:
-   - Deployments: `apim-control-plane-1`, `apim-control-plane-2`, `apim-traffic-manager-1`, `apim-traffic-manager-2`, `apim-gateway`
-   - Services: `apim-control-plane-service`, `apim-control-plane-1-service`, `apim-control-plane-2-service`, `apim-traffic-manager-service`, `apim-traffic-manager-1-service`, `apim-traffic-manager-2-service`, `apim-gateway-service`
+   - Deployments: `openg2p-wso2-apim-control-plane-1`, `openg2p-wso2-apim-control-plane-2`, `openg2p-wso2-apim-traffic-manager-1`, `openg2p-wso2-apim-traffic-manager-2`, `openg2p-wso2-apim-gateway`
+   - Services: `openg2p-wso2-apim-control-plane-service`, `openg2p-wso2-apim-control-plane-1-service`, `openg2p-wso2-apim-control-plane-2-service`, `openg2p-wso2-apim-traffic-manager-service`, `openg2p-wso2-apim-traffic-manager-1-service`, `openg2p-wso2-apim-traffic-manager-2-service`, `openg2p-wso2-apim-gateway-service`
 9. If your cluster API watch streams are unstable, keep `HELM_WAIT=false`.
 10. If gateway pods are pending due CPU pressure, reduce `GW_CPU_REQUEST` and `GW_MEMORY_REQUEST` in `.env`.
 
