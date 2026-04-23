@@ -7,11 +7,13 @@ source "${SCRIPT_DIR}/lib.sh"
 
 ENV_FILE="${1:-${ROOT_DIR}/.env}"
 load_env_file "${ENV_FILE}"
-require_commands helm envsubst git
-require_vars HELM_MI_CHART_REF
+require_commands helm envsubst git kubectl
+require_vars HELM_MI_CHART_REF NAMESPACE MI_RELEASE_NAME
 
 bash "${SCRIPT_DIR}/render-values.sh" "${ENV_FILE}"
 bash "${SCRIPT_DIR}/pull-charts.sh" "${ENV_FILE}"
+bash "${SCRIPT_DIR}/patch-mi-log4j2.sh" "${ENV_FILE}"
+bash "${SCRIPT_DIR}/patch-mi-users.sh" "${ENV_FILE}"
 
 CHART_DIR="${ROOT_DIR}/generated/charts/helm-mi/mi"
 helm lint "${CHART_DIR}" -f "${ROOT_DIR}/generated/mi-values.yaml"

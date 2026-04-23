@@ -14,6 +14,8 @@ require_vars \
   CUSTOM_IMAGE_REGISTRY MI_CUSTOM_IMAGE_REPOSITORY \
   CUSTOM_IMAGE_PULL_SECRET_USERNAME CUSTOM_IMAGE_PULL_SECRET_PASSWORD
 
+bash "${SCRIPT_DIR}/prepare-currencyconverter-sample.sh" "${ENV_FILE}"
+
 if [[ "${IMAGE_REGISTRY}" != "docker.wso2.com" ]]; then
   echo "Subscription images are required for MI image builds. Set IMAGE_REGISTRY=docker.wso2.com." >&2
   exit 1

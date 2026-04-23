@@ -18,7 +18,7 @@ Reference documentation:
 
 - `values/mi-values.yaml.tmpl`: template for Helm values.
 - `scripts/`: automation scripts for render, secrets, deploy, lint, and cleanup.
-- `docker/mi.Dockerfile`: optional base image extension for JDBC/shared libs.
+- `docker/mi.Dockerfile`: custom MI image extension that also bundles the currency converter sample CAR.
 - `.env.example`: single source of environment-specific settings.
 - `Makefile`: operator entry points.
 
@@ -32,6 +32,7 @@ This setup is configured for **stateless multiple replicas**:
 ## Prerequisites
 
 - `kubectl`, `helm`, `git`, `bash`, `envsubst`
+- `curl`, `python3`, `java` (required to fetch and build the bundled currency converter sample CAR during image builds)
 - `keytool` (only if `AUTO_GENERATE_KEYSTORES=true`)
 - NGINX ingress or Gateway API controller (depending on your routing mode)
 
@@ -39,14 +40,16 @@ This setup is configured for **stateless multiple replicas**:
 
 1. Copy `.env.example` to `.env`.
 2. Update `MI_HOSTNAME` and routing flags (`ENABLE_INGRESS` / `ENABLE_GATEWAY_API`).
-3. Set WSO2 subscription credentials (`IMAGE_PULL_SECRET_USERNAME`, `IMAGE_PULL_SECRET_PASSWORD`).
-4. Set custom registry credentials (`CUSTOM_IMAGE_PULL_SECRET_USERNAME`, `CUSTOM_IMAGE_PULL_SECRET_PASSWORD`) and confirm `MI_CUSTOM_IMAGE_REPOSITORY`.
-5. Keep or adjust replica/resource settings.
+3. Set `CURRENCY_SERVICE_URL` to the backend used by the bundled currency converter sample.
+4. Set WSO2 subscription credentials (`IMAGE_PULL_SECRET_USERNAME`, `IMAGE_PULL_SECRET_PASSWORD`).
+5. Set custom registry credentials (`CUSTOM_IMAGE_PULL_SECRET_USERNAME`, `CUSTOM_IMAGE_PULL_SECRET_PASSWORD`) and confirm `MI_CUSTOM_IMAGE_REPOSITORY`.
+6. Keep or adjust replica/resource settings.
 
 Important defaults:
 - `MI_IMAGE_TAG=4.6.0`
 - `MI_BUILD_VERSION=4.6.0`
 - `MI_REPLICAS=2`
+- `CURRENCY_SERVICE_URL=https://dev-tools.wso2.com/gs/helpers/v1.0`
 
 ## Commands
 
@@ -58,9 +61,10 @@ make deploy
 
 `make deploy` executes:
 1. Cluster connectivity check.
-2. Build and push custom MI image to `${CUSTOM_IMAGE_REGISTRY}/${MI_CUSTOM_IMAGE_REPOSITORY}:${MI_IMAGE_TAG}` (unless `SKIP_IMAGE_BUILD=true`).
-3. Namespace and secret preparation.
-4. Helm values render, chart pull, and chart deploy.
+2. Download/build the official currency converter sample and stage its CAR into `docker/carbonapps/`.
+3. Build and push custom MI image to `${CUSTOM_IMAGE_REGISTRY}/${MI_CUSTOM_IMAGE_REPOSITORY}:${MI_IMAGE_TAG}` (unless `SKIP_IMAGE_BUILD=true`).
+4. Namespace and secret preparation.
+5. Helm values render, chart pull, and chart deploy.
 
 Undeploy:
 
@@ -81,3 +85,4 @@ Optional validation scripts:
 - Subscription images require credentials for `docker.wso2.com`.
 - Runtime pods pull from `CUSTOM_IMAGE_REGISTRY/MI_CUSTOM_IMAGE_REPOSITORY`, not directly from the subscription registry.
 - Keystores can be auto-generated for non-production using `AUTO_GENERATE_KEYSTORES=true`.
+- The custom MI image now includes the official WSO2 currency converter sample CAR by staging it into `docker/carbonapps/` during image builds.

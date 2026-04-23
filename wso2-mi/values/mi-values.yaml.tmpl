@@ -3,10 +3,6 @@ cloudName: "${CLOUD_NAME}"
 containerRegistry: "${CUSTOM_IMAGE_REGISTRY}"
 
 wso2:
-  subscription:
-    username: "${IMAGE_PULL_SECRET_USERNAME}"
-    password: "${IMAGE_PULL_SECRET_PASSWORD}"
-
   ingress:
     enabled: ${ENABLE_INGRESS}
     ingressClassName: "${INGRESS_CLASS}"
@@ -32,8 +28,7 @@ wso2:
   config:
     portOffset: ${MI_PORT_OFFSET}
     admin:
-      username: "${MI_ADMIN_USERNAME}"
-      password: "${MI_ADMIN_PASSWORD}"
+      # username and password are injected at deploy time from MI_ADMIN_SECRET_NAME (K8s secret).
       createAdminAccount: false
     userstore:
       file:
@@ -55,6 +50,11 @@ wso2:
       primary:
         fileName: "client-truststore.jks"
         password: "${KEYSTORE_PASSWORD}"
+    icp:
+      url: "https://${CLOUD_NAME}-${ICP_RELEASE_NAME}:${ICP_HTTPS_PORT}/dashboard/api/"
+      # ICP calls back to MI via the internal K8s service so it bypasses Istio JWT auth.
+      managementHostname: "${CLOUD_NAME}-${MI_RELEASE_NAME}"
+      managementPort: ${MI_MGMT_PORT}
 
   deployment:
     hostname: "${MI_HOSTNAME}"
@@ -65,6 +65,9 @@ wso2:
       repository: "${MI_CUSTOM_IMAGE_REPOSITORY}"
       tag: "${MI_IMAGE_TAG}"
       pullPolicy: ${MI_IMAGE_PULL_POLICY}
+
+    envs:
+      currency_service_url: "${CURRENCY_SERVICE_URL}"
 
     replicas: ${MI_REPLICAS}
     hpa:
@@ -98,7 +101,7 @@ wso2:
     strategy:
       rollingUpdate:
         maxSurge: 1
-        maxUnavailable: 0
+        maxUnavailable: 1
 
     synapseTest:
       enabled: false

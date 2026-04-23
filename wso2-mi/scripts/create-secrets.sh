@@ -9,7 +9,7 @@ ENV_FILE="${1:-${ROOT_DIR}/.env}"
 load_env_file "${ENV_FILE}"
 ensure_kubeconfig_default
 require_commands kubectl
-require_vars NAMESPACE KEYSTORE_SECRET_NAME
+require_vars NAMESPACE KEYSTORE_SECRET_NAME MI_ADMIN_SECRET_NAME
 
 kubectl create namespace "${NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
 
@@ -65,5 +65,21 @@ else
   echo "Set AUTO_GENERATE_KEYSTORES=true or create the secret manually before deploy." >&2
   exit 1
 fi
+
+# ── Admin credentials secret ─────────────────────────────────────────────────
+# The secret must be pre-created by the operator with 'username' and 'password' keys.
+# Example:
+#   kubectl -n "${NAMESPACE}" create secret generic "${MI_ADMIN_SECRET_NAME}" \
+#     --from-literal=username=admin \
+#     --from-literal=password=<strong-password>
+if ! kubectl -n "${NAMESPACE}" get secret "${MI_ADMIN_SECRET_NAME}" >/dev/null 2>&1; then
+  echo "ERROR: Admin credentials secret '${MI_ADMIN_SECRET_NAME}' not found in namespace '${NAMESPACE}'." >&2
+  echo "Create it manually before running deploy:" >&2
+  echo "  kubectl -n ${NAMESPACE} create secret generic ${MI_ADMIN_SECRET_NAME} \\" >&2
+  echo "    --from-literal=username=<username> \\" >&2
+  echo "    --from-literal=password=<password>" >&2
+  exit 1
+fi
+echo "Admin credentials secret ${MI_ADMIN_SECRET_NAME} is present in namespace ${NAMESPACE}."
 
 echo "Secrets are ready in namespace ${NAMESPACE}."

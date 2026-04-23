@@ -19,11 +19,17 @@ wso2:
 
   config:
     # Service accounts ICP uses to connect to Integrator runtimes.
-    # mi credentials must match the MI admin credentials.
+    # mi credentials are injected at deploy time from MI_ADMIN_SECRET_NAME (K8s secret).
+    # admin.username/password control the ICP dashboard login (mapped to [super_admin]
+    # in deployment.toml, which ConfigParser uses to generate user-mgt.xml at startup).
+    # These are injected via --set-string in deploy.sh from MI_ADMIN_SECRET_NAME.
+    admin:
+      username: ""
+      password: ""
     serviceAccount:
       mi:
-        username: "${MI_ADMIN_USERNAME}"
-        password: "${MI_ADMIN_PASSWORD}"
+        username: ""
+        password: ""
       bi:
         username: "bal_admin"
         password: "bal_secret"

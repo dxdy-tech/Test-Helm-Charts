@@ -46,10 +46,13 @@ bash "${SCRIPT_DIR}/create-secrets.sh" "${ENV_FILE}"
 
 bash "${SCRIPT_DIR}/render-values.sh" "${ENV_FILE}"
 bash "${SCRIPT_DIR}/pull-charts.sh" "${ENV_FILE}"
+bash "${SCRIPT_DIR}/patch-mi-log4j2.sh" "${ENV_FILE}"
+bash "${SCRIPT_DIR}/patch-mi-users.sh" "${ENV_FILE}"
+bash "${SCRIPT_DIR}/patch-node-affinity.sh" "${ENV_FILE}"
+bash "${SCRIPT_DIR}/patch-icp-super-admin.sh" "${ENV_FILE}"
 
-# Render and apply Istio Gateway + VirtualService (MI + ICP)
-require_vars ISTIO_GATEWAY_NAME ISTIO_TLS_MODE MI_HTTPS_PORT \
-             ICP_ISTIO_GATEWAY_NAME ICP_HOSTNAME ICP_HTTPS_PORT ICP_RELEASE_NAME
+# Render and apply Istio Gateway + VirtualServices (MI + ICP shared)
+require_vars ISTIO_GATEWAY_NAME MI_HTTPS_PORT ICP_HOSTNAME ICP_HTTPS_PORT ICP_RELEASE_NAME MI_ADMIN_SECRET_NAME
 mkdir -p "${ROOT_DIR}/generated"
 envsubst < "${ROOT_DIR}/manifests/istio.yaml.tmpl" > "${ROOT_DIR}/generated/istio.yaml"
 kubectl apply -f "${ROOT_DIR}/generated/istio.yaml"
@@ -57,7 +60,11 @@ kubectl apply -f "${ROOT_DIR}/generated/istio.yaml"
 MI_CHART_DIR="${ROOT_DIR}/generated/charts/helm-mi/mi"
 ICP_CHART_DIR="${ROOT_DIR}/generated/charts/helm-mi/icp"
 
-HELM_FLAGS=(--namespace "${NAMESPACE}" --create-namespace)
+# Read admin credentials from the pre-existing K8s secret so they never need to live in .env.
+MI_ADMIN_USERNAME="$(kubectl -n "${NAMESPACE}" get secret "${MI_ADMIN_SECRET_NAME}" -o jsonpath='{.data.username}' | base64 -d)"
+MI_ADMIN_PASSWORD="$(kubectl -n "${NAMESPACE}" get secret "${MI_ADMIN_SECRET_NAME}" -o jsonpath='{.data.password}' | base64 -d)"
+
+HELM_FLAGS=(--namespace "${NAMESPACE}" --create-namespace --force-conflicts)
 if is_true "${HELM_WAIT}"; then
   HELM_FLAGS+=(--wait --timeout "${HELM_TIMEOUT}")
 fi
@@ -79,8 +86,38 @@ helm_safe_upgrade() {
   helm upgrade --install "${release}" "$@"
 }
 
-helm_safe_upgrade "${MI_RELEASE_NAME}"  "${MI_CHART_DIR}"  -f "${ROOT_DIR}/generated/mi-values.yaml"  "${HELM_FLAGS[@]}"
-helm_safe_upgrade "${ICP_RELEASE_NAME}" "${ICP_CHART_DIR}" -f "${ROOT_DIR}/generated/icp-values.yaml" "${HELM_FLAGS[@]}"
+rollout_restart_deployments() {
+  local selector="$1"
+  local deployment
+  local -a deployments=()
+
+  while IFS= read -r deployment; do
+    [[ -n "${deployment}" ]] && deployments+=("${deployment}")
+  done < <(kubectl -n "${NAMESPACE}" get deployment -l "${selector}" -o name)
+
+  if [[ "${#deployments[@]}" -eq 0 ]]; then
+    echo "No deployments found for selector ${selector}." >&2
+    exit 1
+  fi
+
+  for deployment in "${deployments[@]}"; do
+    echo "Restarting ${deployment} to pick up the latest image..."
+    kubectl -n "${NAMESPACE}" rollout restart "${deployment}"
+    kubectl -n "${NAMESPACE}" rollout status "${deployment}" --timeout "${HELM_TIMEOUT}"
+  done
+}
+
+helm_safe_upgrade "${MI_RELEASE_NAME}"  "${MI_CHART_DIR}"  -f "${ROOT_DIR}/generated/mi-values.yaml" \
+  --set-string "wso2.config.admin.username=${MI_ADMIN_USERNAME}" \
+  --set-string "wso2.config.admin.password=${MI_ADMIN_PASSWORD}" \
+  "${HELM_FLAGS[@]}"
+rollout_restart_deployments "app.kubernetes.io/instance=${MI_RELEASE_NAME}"
+helm_safe_upgrade "${ICP_RELEASE_NAME}" "${ICP_CHART_DIR}" -f "${ROOT_DIR}/generated/icp-values.yaml" \
+  --set-string "wso2.config.serviceAccount.mi.username=${MI_ADMIN_USERNAME}" \
+  --set-string "wso2.config.serviceAccount.mi.password=${MI_ADMIN_PASSWORD}" \
+  --set-string "wso2.config.admin.username=${MI_ADMIN_USERNAME}" \
+  --set-string "wso2.config.admin.password=${MI_ADMIN_PASSWORD}" \
+  "${HELM_FLAGS[@]}"
 
 kubectl -n "${NAMESPACE}" get pods
 kubectl -n "${NAMESPACE}" get svc
